@@ -9,12 +9,45 @@ function selectButton(button) {
 	selectedButton.focus();
 }
 
-function selectli(li) {
-	selectButton(li.firstElementChild);
+function getChildren(button) {
+	return button.nextElementSibling;
+}
+function getButtonParent(button) {
+	if (button != document.getElementById("root")) {
+		return button.parentElement.parentElement.previousElementSibling;
+	}
+}
+function getButtonFirstChild(button) {
+	if (!(children = getChildren(button))) return;
+	if (!(li = children.firstElementChild)) return;
+	return li.firstElementChild;
+}
+function getButtonLastChild(button) {
+	if (!(children = getChildren(button))) return;
+	if (!(li = children.lastElementChild)) return;
+	return li.firstElementChild;
+}
+function getButtonNextSibling(button) {
+	if (button == document.getElementById("root")) return;
+	let sibling = button.parentElement.nextElementSibling;
+	if (sibling) return sibling.firstElementChild;
+}
+function getButtonPreviousSibling(button) {
+	if (button == document.getElementById("root")) return;
+	let sibling = button.parentElement.previousElementSibling;
+	if (sibling) return sibling.firstElementChild;
+}
+
+function expandstr(str, n) {
+	let matrix = PMSexpand(PMStomatrix(str), n);
+	if (PMSisSuccessor(matrix)) {
+		return PMSsimplify(matrix.slice(0, -1));
+	}
+	return matrix;
 }
 
 function unexpand(button) {
-	const children = button.nextElementSibling;
+	const children = getChildren(button);
 	if (!children) return;
 	if (children.classList.contains("expanded")) {
 		children.removeChild(children.firstElementChild);
@@ -23,11 +56,12 @@ function unexpand(button) {
 			button.classList.remove("button-expanded");
 			button.classList.add("button-collapsed");
 		}
+		return true;
 	}
 }
 
 function expand(button) {
-	const children = button.nextElementSibling;
+	const children = getChildren(button);
 	if (!children) return;
 	if (!children.classList.contains("expanded")) {
 		children.classList.toggle("expanded");
@@ -35,12 +69,26 @@ function expand(button) {
 		button.classList.add("button-expanded");
 	}
 	let str = button.innerText;
+	let index = children.children.length + 1;
 	if (str == "Root") {
-		let size = children.children.length + 1;
-		let label = "("+Array(size).fill(0).join(",")+")("+Array(size).fill(1).join(",")+")";
+		let label = "("+Array(index).fill(0).join(",")+")("+Array(index).fill(1).join(",")+")";
 		return createButton(label, children);
 	}
-	let matrix = PMSexpand(PMStomatrix(str), children.children.length);
+	
+	let matrix = expandstr(str, index);
+	let current = button;
+	let firstString = PMStostring(expandstr(str, 1));
+	while (true) {
+		let sibling = getButtonNextSibling(current);
+		let child = getButtonLastChild(current);
+		if (current != button && child && child.innerText == firstString || (sibling && (sibling.innerText == firstString))) {
+			matrix = expandstr(str, index + 1);
+			break;
+		}
+		if (current == document.getElementById("root")) break;
+		current = getButtonParent(current);
+	}
+	
 	let isSuccessor = PMSisSuccessor(matrix);
 	return createButton(PMStostring(matrix), children, isSuccessor);
 }
@@ -62,32 +110,28 @@ function createButton(label, parent, isLeaf) {
 }
 
 function moveSelectionDown() {
-	let li = selectedButton.parentElement;
-	let parent = li.parentElement.parentElement;
-	if (selectedButton.nextElementSibling && selectedButton.nextElementSibling.firstElementChild) {
-		selectli(selectedButton.nextElementSibling.firstElementChild);
-	} else if (li.nextElementSibling) {
-		selectli(li.nextElementSibling);
-	} else if (parent) {
-		while (parent && !parent.nextElementSibling)
-		{
-			parent = parent.parentElement.parentElement;
+	if (firstChild = getButtonFirstChild(selectedButton)) {
+		selectButton(firstChild);
+	} else if (nextSibling = getButtonNextSibling(selectedButton)) {
+		selectButton(nextSibling);
+	} else if (parentButton = getButtonParent(selectedButton)) {
+		while (parentButton && !getButtonNextSibling(parentButton)) {
+			parentButton = getButtonParent(parentButton);
 		}
-		if (parent && parent.nextElementSibling && parent != document.getElementById("tree")) {
-			selectli(parent.nextElementSibling);
+		if (parentButton && (parentSibling = getButtonNextSibling(parentButton))) {
+			selectButton(parentSibling);
 		}
 	}
 }
 
 function moveSelectionUp() {
-	let li = selectedButton.parentElement;
-	if (li.previousElementSibling) {
-		selectli(li.previousElementSibling);
-		while (selectedButton.nextElementSibling && selectedButton.nextElementSibling.lastElementChild) {
-			selectli(selectedButton.nextElementSibling.lastElementChild);
+	if (selection = getButtonPreviousSibling(selectedButton)) {
+		while (getButtonLastChild(selection)) {
+			selection = getButtonLastChild(selection);
 		}
-	} else if (li != document.getElementById("tree")) {
-		selectli(li.parentElement.parentElement);
+		selectButton(selection);
+	} else if (parentButton = getButtonParent(selectedButton)) {
+		selectButton(parentButton);
 	}
 }
 
@@ -113,11 +157,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			moveSelectionUp();
 		} else if (event.key === "Backspace") {
 			event.preventDefault();
-			unexpand(selectedButton);
+			if (!unexpand(selectedButton)) {
+				moveSelectionUp();
+			}
 		} else if (event.key === "Enter") {
 			event.preventDefault();
 			let button = selectedButton;
-			for (let i = 0; i < 10; i++) {
+			for (let i = 0; i < 1000; i++) {
 				button = expand(button);
 				if (!button) break;
 			}
