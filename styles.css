@@ -1,0 +1,34 @@
+body {
+	background-color: #222;
+	color: white;
+	font-family: Arial, sans-serif;
+}
+
+.node {
+	background: none;
+	color: white;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+	text-align: left;
+}
+
+.children {
+	display: none;
+	list-style-type: none;
+	margin-left: 20px;
+}
+
+.button-expanded::after {
+	content: "▼";
+	margin-left: 5px;
+}
+
+.button-collapsed::after {
+	content: "►";
+	margin-left: 5px;
+}
+
+.expanded {
+	display: block;
+}
