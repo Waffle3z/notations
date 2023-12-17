@@ -1,4 +1,8 @@
 let selectedButton = null;
+let settings = {
+	notation: "AMS",
+	indentation: "expansion"
+};
 
 function selectButton(button) {
 	if (selectedButton) {
@@ -39,11 +43,15 @@ function getButtonPreviousSibling(button) {
 }
 
 function expandstr(str, n) {
-	let matrix = PMSexpand(PMStomatrix(str), n);
-	if (PMSisSuccessor(matrix)) {
-		return PMSsimplify(matrix.slice(0, -1));
+	let matrix = PMStomatrix(str);
+	if (settings.notation == "AMS") {
+		matrix = PMSflipterms(matrix);
 	}
-	return matrix;
+	matrix = PMSexpand(matrix, n);
+	if (PMSisSuccessor(matrix)) {
+		matrix = PMSsimplify(matrix.slice(0, -1));
+	}
+	return settings.notation == "AMS" ? PMSflipterms(matrix) : matrix;
 }
 
 function unexpand(button) {
@@ -72,6 +80,7 @@ function expand(button) {
 	let index = children.children.length + 1;
 	if (str == "Root") {
 		let label = "("+Array(index).fill(0).join(",")+")("+Array(index).fill(1).join(",")+")";
+		label = PMStostring(PMStomatrix(label));
 		return createButton(label, children);
 	}
 	
@@ -93,8 +102,19 @@ function expand(button) {
 	return createButton(PMStostring(matrix), children, isSuccessor);
 }
 
+function indentli(li, index) {
+	if (settings.indentation == "expansion") {
+		li.style.marginLeft = `calc(40px * ${index} - 40px)`;
+	} else if (settings.indentation == "noindent") {
+		li.style.marginLeft = `-40px`;
+	} else if (settings.indentation == "FS") {
+		li.style.marginLeft = ``;
+	}
+}
+
 function createButton(label, parent, isLeaf) {
 	const childItem = document.createElement("li");
+	indentli(childItem, parent.children.length);
 	const button = document.createElement("button");
 	childItem.appendChild(button);
 	button.classList.add("node");
@@ -135,6 +155,46 @@ function moveSelectionUp() {
 	}
 }
 
+function flipTerms() {
+	let stack = [document.getElementById("root")];
+	while (stack.length > 0) {
+		let button = stack.pop();
+		let current = getButtonLastChild(button);
+		while (current) {
+			current.innerText = PMStostring(PMSflipterms(PMStomatrix(current.innerText)));
+			stack.push(current);
+			current = getButtonPreviousSibling(current);
+		}
+	}
+}
+
+function refreshIndentation() {
+	let stack = [document.getElementById("root")];
+	while (stack.length > 0) {
+		let button = stack.pop();
+		let current = getButtonLastChild(button);
+		let index = 0;
+		while (current) {
+			indentli(current.parentElement, index);
+			stack.push(current);
+			index++
+			current = getButtonPreviousSibling(current);
+		}
+	}
+}
+
+function setNotation(newNotation) {
+	if ((settings.notation == "PMS" && newNotation == "AMS") || (settings.notation == "AMS" && newNotation == "PMS")) {
+		flipTerms();
+	}
+	settings.notation = newNotation;
+}
+
+function setIndentation(newIndentation) {
+	settings.indentation = newIndentation;
+	refreshIndentation();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
 	const container = document.getElementById("tree");
 	selectButton(document.getElementById("root"));
@@ -171,5 +231,16 @@ document.addEventListener("DOMContentLoaded", () => {
 			event.preventDefault();
 			expand(selectedButton);
 		}
+	});
+	
+	document.querySelectorAll('input[name="notation"]').forEach(function(radioInput) {
+		radioInput.addEventListener('change', function() {
+			setNotation(radioInput.value);
+		});
+	});
+	document.querySelectorAll('input[name="indentation"]').forEach(function(radioInput) {
+		radioInput.addEventListener('change', function() {
+			setIndentation(radioInput.value);
+		});
 	});
 });

@@ -13,10 +13,14 @@ body {
 	text-align: left;
 }
 
+.node:focus {
+	outline: 1px solid white;
+	outline-offset: 3px;
+}
+
 .children {
 	display: none;
 	list-style-type: none;
-	margin-left: 20px;
 }
 
 .button-expanded::after {
@@ -31,4 +35,18 @@ body {
 
 .expanded {
 	display: block;
+}
+
+#container {
+	display: flex;
+}
+
+#tree {
+	flex: 1;
+	padding: 20px;
+}
+
+#settings {
+	width: 300px;
+	padding: 20px;
 }

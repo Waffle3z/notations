@@ -72,6 +72,19 @@ function PMSexpand(matrix, n) {
 	return PMSsimplify(newMatrix);
 }
 
+// convert between PMS and AMS
+function PMSflipterms(matrix) {
+	let newMatrix = [];
+	for (let i = 0; i < matrix.length; i++) {
+		let newRow = [];
+		for (let j = 0; j < matrix[i].length; j++) {
+			newRow[j] = matrix[i][j] == 0 ? 0 : i+1 - matrix[i][j];
+		}
+		newMatrix[i] = newRow;
+	}
+	return newMatrix;
+}
+
 function PMSisSuccessor(matrix) {
 	const lastColumn = matrix[matrix.length - 1];
 	if (lastColumn) {
