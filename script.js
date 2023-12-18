@@ -115,6 +115,9 @@ function convertToNotation(PMSstring) {
 		matrix = PMStoAMS(matrix);
 	} else if (settings.notation == "BMS") {
 		matrix = PMStoBMS(matrix);
+	} else if (settings.notation == "0Y") {
+		matrix = PMSto0Y(matrix);
+		return matrix.join(",");
 	}
 	return matrixToString(settings.simplify ? matrixSimplify(matrix) : matrix);
 }

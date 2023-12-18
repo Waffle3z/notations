@@ -125,3 +125,17 @@ function AMStoBMS(matrix) {
 function PMStoBMS(matrix) {
 	return AMStoBMS(PMStoAMS(matrix));
 }
+
+function AMSto0Y(matrix) {
+	let a = Array(matrix.length).fill(1);
+	for (let y = matrix[0].length - 1; y >= 0; y--) {
+		for (let x = 0; x < matrix.length; x++) {
+			a[x] = matrix[x][y] === 0 ? 1 : a[x] + a[matrix[x][y] - 1];
+		}
+	}
+	return a;
+}
+
+function PMSto0Y(matrix) {
+	return AMSto0Y(PMStoAMS(matrix));
+}
