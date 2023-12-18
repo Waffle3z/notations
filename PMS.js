@@ -1,4 +1,4 @@
-function PMStomatrix(s) {
+function stringToMatrix(s) {
 	const matrix = [];
 	const columns = s.match(/\([^)]+\)/g) || [];
 	for (const v of columns) {
@@ -8,7 +8,7 @@ function PMStomatrix(s) {
 	return matrix;
 }
 
-function PMStostring(m) {
+function matrixToString(m) {
 	let s = "";
 	for (let i = 0; i < m.length; i++) {
 		s += `(${m[i].join(",")})`;
@@ -17,7 +17,7 @@ function PMStostring(m) {
 }
 
 // remove rows that are all zero
-function PMSsimplify(matrix) {
+function matrixReduce(matrix) {
 	if (matrix.length == 0 || matrix[0].length <= 1) return matrix;
 	let index = matrix[0].length-1;
 	for (let i = 0; i < matrix.length; i++) {
@@ -28,7 +28,30 @@ function PMSsimplify(matrix) {
 	for (let i = 0; i < matrix.length; i++) {
 		matrix[i].pop();
 	}
-	return PMSsimplify(matrix);
+	return matrixReduce(matrix);
+}
+
+// remove trailing zeros
+function matrixSimplify(matrix) {
+	return matrix.map(row => {
+		let index = row.length - 1;
+		while (index > 0 && row[index] === 0) {
+			index--;
+		}
+		return row.slice(0, index + 1);
+	});
+}
+
+function matrixIsSuccessor(matrix) {
+	const lastColumn = matrix[matrix.length - 1];
+	if (lastColumn) {
+		for (let i = 0; i < lastColumn.length; i++) {
+			if (lastColumn[i] !== 0) {
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
 function PMSexpand(matrix, n) {
@@ -42,13 +65,10 @@ function PMSexpand(matrix, n) {
 			break;
 		}
 	}
-	const newMatrix = [];
-	for (let i = 0; i < matrix.length; i++) {
-		newMatrix[i] = [...matrix[i]];
-	}
+	const newMatrix = matrix.map(row => [...row]);
 	if (!L || n == 0) {
 		newMatrix.pop();
-		return PMSsimplify(newMatrix);
+		return matrixReduce(newMatrix);
 	}
 	for (let i = Li; i < lastColumn.length; i++) {
 		if (newMatrix[newMatrix.length - L - 1][i] !== 0) {
@@ -69,30 +89,39 @@ function PMSexpand(matrix, n) {
 			newMatrix.push(column);
 		}
 	}
-	return PMSsimplify(newMatrix);
+	return matrixReduce(newMatrix);
 }
 
-// convert between PMS and AMS
-function PMSflipterms(matrix) {
+function PMStoAMS(matrix) {
 	let newMatrix = [];
 	for (let i = 0; i < matrix.length; i++) {
 		let newRow = [];
 		for (let j = 0; j < matrix[i].length; j++) {
-			newRow[j] = matrix[i][j] == 0 ? 0 : i+1 - matrix[i][j];
+			newRow[j] = matrix[i][j] == 0 ? 0 : i + 1 - matrix[i][j];
 		}
 		newMatrix[i] = newRow;
 	}
 	return newMatrix;
 }
 
-function PMSisSuccessor(matrix) {
-	const lastColumn = matrix[matrix.length - 1];
-	if (lastColumn) {
-		for (let i = 0; i < lastColumn.length; i++) {
-			if (lastColumn[i] !== 0) {
-				return false;
+function AMStoBMS(matrix) {
+	let newMatrix = [];
+	for (let i = 0; i < matrix.length; i++) {
+		let newRow = [];
+		for (let j = 0; j < matrix[i].length; j++) {
+			let height = 0;
+			let index = matrix[i][j];
+			while (index > 0) {
+				height++;
+				index = matrix[index-1][j];
 			}
+			newRow[j] = height;
 		}
-		return true;
+		newMatrix[i] = newRow;
 	}
+	return newMatrix;
+}
+
+function PMStoBMS(matrix) {
+	return AMStoBMS(PMStoAMS(matrix));
 }

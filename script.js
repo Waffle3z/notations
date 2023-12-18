@@ -1,7 +1,8 @@
 let selectedButton = null;
 let settings = {
-	notation: "AMS",
-	indentation: "expansion"
+	notation: "BMS",
+	indentation: "expansion",
+	simplify: false
 };
 
 function selectButton(button) {
@@ -43,15 +44,12 @@ function getButtonPreviousSibling(button) {
 }
 
 function expandstr(str, n) {
-	let matrix = PMStomatrix(str);
-	if (settings.notation == "AMS") {
-		matrix = PMSflipterms(matrix);
-	}
+	let matrix = stringToMatrix(str);
 	matrix = PMSexpand(matrix, n);
-	if (PMSisSuccessor(matrix)) {
-		matrix = PMSsimplify(matrix.slice(0, -1));
+	if (matrixIsSuccessor(matrix)) {
+		return matrixReduce(matrix.slice(0, -1));
 	}
-	return settings.notation == "AMS" ? PMSflipterms(matrix) : matrix;
+	return matrix;
 }
 
 function unexpand(button) {
@@ -76,21 +74,20 @@ function expand(button) {
 		button.classList.remove("button-collapsed");
 		button.classList.add("button-expanded");
 	}
-	let str = button.innerText;
+	let str = button.getAttribute("PMSstring") || "Root";
 	let index = children.children.length + 1;
 	if (str == "Root") {
 		let label = "("+Array(index).fill(0).join(",")+")("+Array(index).fill(1).join(",")+")";
-		label = PMStostring(PMStomatrix(label));
 		return createButton(label, children);
 	}
 	
 	let matrix = expandstr(str, index);
 	let current = button;
-	let firstString = PMStostring(expandstr(str, 1));
+	let firstString = matrixToString(expandstr(str, 1));
 	while (true) {
 		let sibling = getButtonNextSibling(current);
 		let child = getButtonLastChild(current);
-		if (current != button && child && child.innerText == firstString || (sibling && (sibling.innerText == firstString))) {
+		if (current != button && child && child.getAttribute("PMSstring") == firstString || (sibling && (sibling.getAttribute("PMSstring") == firstString))) {
 			matrix = expandstr(str, index + 1);
 			break;
 		}
@@ -98,8 +95,8 @@ function expand(button) {
 		current = getButtonParent(current);
 	}
 	
-	let isSuccessor = PMSisSuccessor(matrix);
-	return createButton(PMStostring(matrix), children, isSuccessor);
+	let isSuccessor = matrixIsSuccessor(matrix);
+	return createButton(matrixToString(matrix), children, isSuccessor);
 }
 
 function indentli(li, index) {
@@ -112,7 +109,17 @@ function indentli(li, index) {
 	}
 }
 
-function createButton(label, parent, isLeaf) {
+function convertToNotation(PMSstring) {
+	let matrix = stringToMatrix(PMSstring);
+	if (settings.notation == "AMS") {
+		matrix = PMStoAMS(matrix);
+	} else if (settings.notation == "BMS") {
+		matrix = PMStoBMS(matrix);
+	}
+	return matrixToString(settings.simplify ? matrixSimplify(matrix) : matrix);
+}
+
+function createButton(PMSstring, parent, isLeaf) {
 	const childItem = document.createElement("li");
 	indentli(childItem, parent.children.length);
 	const button = document.createElement("button");
@@ -124,7 +131,8 @@ function createButton(label, parent, isLeaf) {
 		childrenList.classList.add("children");
 		childItem.appendChild(childrenList);
 	}
-	button.innerText = label;
+	button.setAttribute("PMSstring", PMSstring);
+	button.innerText = convertToNotation(PMSstring);
 	parent.prepend(childItem);
 	return button;
 }
@@ -155,13 +163,13 @@ function moveSelectionUp() {
 	}
 }
 
-function flipTerms() {
+function refreshTerms() {
 	let stack = [document.getElementById("root")];
 	while (stack.length > 0) {
 		let button = stack.pop();
 		let current = getButtonLastChild(button);
 		while (current) {
-			current.innerText = PMStostring(PMSflipterms(PMStomatrix(current.innerText)));
+			current.innerText = convertToNotation(current.getAttribute("PMSstring"));
 			stack.push(current);
 			current = getButtonPreviousSibling(current);
 		}
@@ -184,10 +192,8 @@ function refreshIndentation() {
 }
 
 function setNotation(newNotation) {
-	if ((settings.notation == "PMS" && newNotation == "AMS") || (settings.notation == "AMS" && newNotation == "PMS")) {
-		flipTerms();
-	}
 	settings.notation = newNotation;
+	refreshTerms();
 }
 
 function setIndentation(newIndentation) {
@@ -242,5 +248,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		radioInput.addEventListener('change', function() {
 			setIndentation(radioInput.value);
 		});
+	});
+	const simplifyCheckbox = document.getElementById("simplify");
+	simplifyCheckbox.addEventListener('change', function() {
+		settings.simplify = simplifyCheckbox.checked;
+		refreshTerms();
 	});
 });

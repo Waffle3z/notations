@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<meta charset="UTF-8">
-<meta http-equiv='cache-control' content='no-cache'> 
-<meta http-equiv='expires' content='0'> 
-<meta http-equiv='pragma' content='no-cache'>
 <html>
 <head>
+	<meta charset="UTF-8">
+	<meta http-equiv='cache-control' content='no-cache'> 
+	<meta http-equiv='expires' content='0'> 
+	<meta http-equiv='pragma' content='no-cache'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>BMS Explorer</title>
 	<link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
 	<div id="container">
 		<div id="tree">
-			<button class="node button-collapsed" id="root">Root</button>
-			<ul class="children">
+			<ul style="padding:0px; margin:0px">
+				<button class="node button-collapsed" id="root">Root</button>
+				<ul class="children" />
 			</ul>
 		</div>
 		
@@ -20,29 +22,37 @@
 			<fieldset>
 				<legend>Notation:</legend>
 				<div>
+					<input type="radio" id="BMS" value="BMS" name="notation" checked />
+					<label for="BMS">BMS</label>
+				</div>
+				<div>
 					<input type="radio" id="PMS" value="PMS" name="notation" />
 					<label for="PMS">PMS</label>
 				</div>
 				<div>
-					<input type="radio" id="AMS" value="AMS" name="notation" checked />
+					<input type="radio" id="AMS" value="AMS" name="notation" />
 					<label for="AMS">AMS</label>
 				</div>
 			</fieldset>
 			<fieldset>
 				<legend>Indentation:</legend>
 				<div>
-					<input type="radio" id="FS" value="FS" name="indentation" />
-					<label for="FS">Align fundamental sequence</label>
-				</div>
-				<div>
 					<input type="radio" id="expansion" value="expansion" name="indentation" checked />
 					<label for="expansion">Align recursive expansion</label>
+				</div>
+				<div>
+					<input type="radio" id="FS" value="FS" name="indentation" />
+					<label for="FS">Align fundamental sequence</label>
 				</div>
 				<div>
 					<input type="radio" id="noindent" value="noindent" name="indentation" />
 					<label for="noindent">None</label>
 				</div>
 			</fieldset>
+			<div>
+				<input type="checkbox" id="simplify" />
+				<label for="simplify">Simplify trailing zeros</label>
+			</div>
 		</div>
 	</div>
 	
