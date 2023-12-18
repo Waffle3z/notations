@@ -11,6 +11,7 @@ body {
 	cursor: pointer;
 	padding: 0;
 	text-align: left;
+	font-family: Consolas;
 }
 
 .node:focus {

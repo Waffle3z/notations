@@ -2,7 +2,8 @@ let selectedButton = null;
 let settings = {
 	notation: "BMS",
 	indentation: "expansion",
-	simplify: false
+	simplify: false,
+	aliases: true
 };
 
 function selectButton(button) {
@@ -111,15 +112,29 @@ function indentli(li, index) {
 
 function convertToNotation(PMSstring) {
 	let matrix = stringToMatrix(PMSstring);
+	let BMSstring = matrixToString(PMStoBMS(matrix));
 	if (settings.notation == "AMS") {
 		matrix = PMStoAMS(matrix);
 	} else if (settings.notation == "BMS") {
 		matrix = PMStoBMS(matrix);
-	} else if (settings.notation == "0Y") {
-		matrix = PMSto0Y(matrix);
-		return matrix.join(",");
 	}
-	return matrixToString(settings.simplify ? matrixSimplify(matrix) : matrix);
+	
+	let str;
+	if (settings.notation == "0Y") {
+		matrix = PMSto0Y(matrix);
+		str = matrix.join(",");
+	} else {
+		str = matrixToString(settings.simplify ? matrixSimplify(matrix) : matrix);
+	}
+	
+	if (settings.aliases) {
+		let alias = findBMSAlias(BMSstring);
+		if (alias) {
+			str += " = " + alias;
+		}
+	}
+	
+	return str;
 }
 
 function createButton(PMSstring, parent, isLeaf) {
@@ -255,6 +270,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	const simplifyCheckbox = document.getElementById("simplify");
 	simplifyCheckbox.addEventListener('change', function() {
 		settings.simplify = simplifyCheckbox.checked;
+		refreshTerms();
+	});
+	const aliasesCheckbox = document.getElementById("aliases");
+	aliasesCheckbox.addEventListener('change', function() {
+		settings.aliases = aliasesCheckbox.checked;
 		refreshTerms();
 	});
 });

@@ -54,6 +54,17 @@ function matrixIsSuccessor(matrix) {
 	}
 }
 
+function matrixLessThan(a, b) {
+	if (a[0].length < b[0].length) return true;
+	for (let i = 0; i < a.length; i++) {
+		if (!b[i]) return false;
+		for (let j = 0; j < a[i].length; j++) {
+			if (a[j] < b[j]) return true;
+		}
+	}
+	return b.length > a.length;
+}
+
 function PMSexpand(matrix, n) {
 	const lastColumn = matrix[matrix.length - 1];
 	if (!lastColumn) return [];
