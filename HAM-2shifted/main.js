@@ -42,6 +42,9 @@ function getButtonPreviousSibling(button) {
 }
 
 function expandstr(str, n) {
+	if (str == "Root") {
+		return expandRoot(n);
+	}
 	return expandArray(stringToArray(str), n);
 }
 
@@ -68,11 +71,6 @@ function expand(button) {
 		button.classList.add("button-expanded");
 	}
 	let str = button.getAttribute("value") || "Root";
-	if (str == "Root") {
-		let index = children.children.length + 1;
-		let label = "[0,0,"+index+"]";
-		return createButton(label, children);
-	}
 	
 	let index = 0;
 	if (arrayIsSuccessor(expandstr(str, 0)) && !arrayIsSuccessor(expandstr(str, 1))) {
@@ -134,7 +132,9 @@ function nextButtonDown(button) {
 }
 
 function moveSelectionDown() {
-	selectButton(nextButtonDown(selectedButton));
+	if (nextButton = nextButtonDown(selectedButton)) {
+		selectButton(nextButton);
+	}
 }
 
 function moveSelectionUp() {

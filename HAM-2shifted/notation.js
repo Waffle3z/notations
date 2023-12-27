@@ -10,10 +10,9 @@ function replaceAllEntries(s, n) {
 function arrayLessOrEqual(a, b) {
 	for (let i = 0; i < a.length; i++) {
 		if (i >= b.length) return false;
-		if (a[i] < b[i]) return true;
-		if (a[i] > b[i]) return false;
+		if (a[i] != b[i]) return a[i] < b[i];
 	}
-	return true;
+	return a.length <= b.length;
 }
 
 function maxLexicographicArray(arrays) {
@@ -27,6 +26,10 @@ function maxLexicographicArray(arrays) {
 		}
 		return maxArray;
 	}, arrays[0]);
+}
+
+function expandRoot(n) {
+	return [0,0,n+1];
 }
 
 function expandArray(s, n) {
