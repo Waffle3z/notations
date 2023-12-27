@@ -44,10 +44,8 @@ function expandArray(s, n) {
 								}
 							}
 							const badPart = maxLexicographicArray(possibleBadParts);
-							for (let l = 0; l < badPart.length; l++) {
-								if (badPart[l] < last) {
-									badPart[l] = last - 1;
-								}
+							while ((badPart.at(-1) < last) && (badPart.length > 1)) {
+								badPart.pop();
 							}
 							s.pop();
 							for (let l = 0; l < n; l++) {
