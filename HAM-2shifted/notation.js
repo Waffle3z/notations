@@ -26,10 +26,13 @@ function expandArray(s, n) {
 	if (last === 0) {
 		s.pop();
 		return s;
-	} else if (arrayToString(s.slice(-3)) == "[0,0,1]") { // special case so 0,0,1 expands to 0 instead of 0,0,0
-		s.splice(-3, 3, ...Array(n).fill(0));
-		return s
 	} else {
+		if (s.length >= 3) {
+			if ((s.at(-1) == s.at(-2)+1) && (s.at(-2) == s.at(-3))) { // expand terms like 0,0,1 to 0 instead of 0,0,0 and 1,1,2 to 1 instead of 1,1,1
+				s.splice(-3, 3, ...Array(n).fill(s.at(-2)));
+				return s;
+			}
+		}
 		for (let i = s.length - 2; i >= 0; i--) {
 			if (s[i] < last) {
 				const t = replaceAllEntries(s.slice(i), last);
