@@ -1,13 +1,18 @@
 let BMS_aliases = {
-	["(0,0)(1,1)"]: "ε₀",
 	["(0,0)(1,1)(1,0)"]: "ε₀·ω",
+	["(0,0)(1,1)(1,0)(1,0)"]: "ε₀·ω^2",
+	["(0,0)(1,1)(1,0)(2,0)"]: "ε₀·ω^ω",
+	["(0,0)(1,1)(1,0)(2,1)"]: "ε₀^2",
+	["(0,0)(1,1)(1,0)(2,1)(1,0)"]: "ε₀^2·ω",
+	["(0,0)(1,1)(1,0)(2,1)(2,0)"]: "ε₀^ω",
 	["(0,0)(1,1)(1,1)"]: "ε₁",
 	["(0,0)(1,1)(2,0)"]: "ε_ω",
-	["(0,0)(1,1)(2,1)"]: "ζ₀",
+	["(0,0)(1,1)(2,0)(1,1)"]: "ε_{ω+1}",
+	["(0,0)(1,1)(2,0)(1,1)(2,0)"]: "ε_{ω·2}",
+	["(0,0)(1,1)(2,0)(2,0)"]: "ε_{ω²}",
 	["(0,0)(1,1)(2,1)(1,0)"]: "ζ₀·ω",
 	["(0,0)(1,1)(2,1)(1,1)"]: "ε_{ζ₀+1}",
 	["(0,0)(1,1)(2,1)(2,0)"]: "ζ_ω",
-	["(0,0)(1,1)(2,1)(2,1)"]: "η₀",
 	["(0,0)(1,1)(2,1)(2,1)(2,0)"]: "η_ω",
 	["(0,0)(1,1)(2,1)(3,0)"]: "ϕ(ω,0)",
 	["(0,0)(1,1)(2,1)(3,0)(2,0)"]: "ϕ(ω,ω)",
@@ -71,7 +76,7 @@ let BMS_aliases = {
 };
 
 // convert PrSS to CNF
-function PrSS(s) {
+function PrSStoCNF(s) {
 	let out = "";
 	let lastterm = "";
 	let coefficient = 1;
@@ -84,7 +89,7 @@ function PrSS(s) {
 				branches += s[j] === s[root+1] ? 1 : 0;
 			}
 
-			let term = ["1", "ω"][i - root] || (branches === 1 ? "ω^x" : "ω^(x)").replace("x", PrSS(s.slice(root+1, i+1))).replace(/\((\d+)\)/g, "$1");
+			let term = ["1", "ω"][i - root] || (branches === 1 ? "ω^x" : "ω^(x)").replace("x", PrSStoCNF(s.slice(root+1, i+1))).replace(/\((\d+)\)/g, "$1");
 			if (term === lastterm && i !== s.length) {
 				coefficient += 1;
 			} else {
@@ -101,11 +106,61 @@ function PrSS(s) {
 	return out.substring(3);
 }
 
-function findBMSAlias(BMSstring) {
-	let matrix = stringToMatrix(BMSstring);
-	if (matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)"))) {
+function toSuperscript(n) {
+	let s = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+	return n.toString().replace(/\d/g, function(x) {
+		return s[parseInt(x)];
+	});
+}
+
+// convert PSS expressions below BHO to Buchholz's OCF
+function Buchholz(s) {
+	let matrix = stringToMatrix(s);
+	let subscripts = "₀₁";
+	let expression = "ψ₀(0";
+	let depth = 0;
+	for (let i = 1; i < matrix.length; i++) {
+		let level = matrix[i][0];
+		let subscript = subscripts[matrix[i][1]];
+		if (level > depth) {
+			depth = depth + 1
+			expression += "+ψ"+subscript+"(0";
+		} else {
+			expression += ")".repeat(depth-level+1);
+			depth = level;
+			expression += "+ψ"+subscript+"(0";
+		}
+	}
+	expression = (expression+")".repeat(depth+1)).replace(/0\+/g, "");
+	expression = expression.replace(/ψ₁\(0\)/g, "Ω");
+	expression = expression.replace(/ψ₀\(0\)/g, "1");
+	expression = expression.replace(/1\+[1+]*1/g, function(x) {
+		return (x.length+1)/2;
+	});
+	expression = expression.replace(/ψ₁\(([Ω+]+)\)/g, function(_, x) {
+		return "Ω"+toSuperscript((x.length+1)/2+1);
+	});
+	expression = expression.replace(/Ω\+[Ω+]*Ω/g, function(x) {
+		return "Ω·"+((x.length+1)/2);
+	});
+	expression = expression.replace(/ψ₀\(Ω\)/g, "ε₀");
+	expression = expression.replace(/ψ₀\(Ω²\)/g, "ζ₀");
+	expression = expression.replace(/ψ₀\(Ω³\)/g, "η₀");
+	expression = expression.replace(/ψ₁\(1\)/g, "Ω·ω");
+	return expression;
+}
+
+function findAlias(PMSstring) {
+	let PMSmatrix = stringToMatrix(PMSstring);
+	let matrix = PMStoBMS(PMSmatrix);
+	let BMSstring = matrixToString(matrix);
+	if (BMS_aliases[BMSstring]) {
+		return BMS_aliases[BMSstring];
+	}
+	
+	if (matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)"))) { // CNF
 		let array = matrix.map(x => x[0]);
-		return PrSS(array);
+		return PrSStoCNF(array);
 	} else {
 		let terms = [];
 		for (let i = 1; i < matrix.length; i++) {
@@ -117,13 +172,20 @@ function findBMSAlias(BMSstring) {
 				}
 			}
 			if (isZero) {
-				let a = findBMSAlias(matrixToString(matrix.slice(0, i)));
-				let b = findBMSAlias(matrixToString(matrix.slice(i)));
+				let a = findAlias(matrixToString(matrixReduce(PMSmatrix.slice(0, i))));
+				let b = findAlias(matrixToString(matrixReduce(PMSmatrix.slice(i))));
 				if (a && b) {
 					return a + " + " + b;
 				}
 			}
 		}
 	}
-	return BMS_aliases[BMSstring];
+	console.log(BMSstring, matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)(2,2)")));
+	console.log(matrix, stringToMatrix("(0,0)(1,1)(2,2)"));
+	if (matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)(2,2)"))) { // Buchholz's OCF below BHO
+		let alias = Buchholz(BMSstring);
+		if (alias) {
+			return alias;
+		}
+	}
 }

@@ -57,9 +57,10 @@ function matrixIsSuccessor(matrix) {
 function matrixLessThan(a, b) {
 	if (a[0].length < b[0].length) return true;
 	for (let i = 0; i < a.length; i++) {
-		if (!b[i]) return false;
+		if (i >= b.length) return false;
 		for (let j = 0; j < a[i].length; j++) {
-			if (a[j] < b[j]) return true;
+			if (a[i][j] < b[i][j]) return true;
+			if (a[i][j] > b[i][j]) return false;
 		}
 	}
 	return b.length > a.length;
@@ -115,26 +116,22 @@ function PMStoAMS(matrix) {
 	return newMatrix;
 }
 
-function AMStoBMS(matrix) {
+function PMStoBMS(matrix) {
 	let newMatrix = [];
 	for (let i = 0; i < matrix.length; i++) {
 		let newRow = [];
 		for (let j = 0; j < matrix[i].length; j++) {
-			let height = 0;
-			let index = matrix[i][j];
+			let height = -1;
+			let index = i + 1;
 			while (index > 0) {
 				height++;
-				index = matrix[index-1][j];
+				index -= (matrix[index-1][j] || index);
 			}
 			newRow[j] = height;
 		}
 		newMatrix[i] = newRow;
 	}
 	return newMatrix;
-}
-
-function PMStoBMS(matrix) {
-	return AMStoBMS(PMStoAMS(matrix));
 }
 
 function AMSto0Y(matrix) {

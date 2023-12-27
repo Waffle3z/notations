@@ -112,7 +112,6 @@ function indentli(li, index) {
 
 function convertToNotation(PMSstring) {
 	let matrix = stringToMatrix(PMSstring);
-	let BMSstring = matrixToString(PMStoBMS(matrix));
 	if (settings.notation == "AMS") {
 		matrix = PMStoAMS(matrix);
 	} else if (settings.notation == "BMS") {
@@ -128,7 +127,7 @@ function convertToNotation(PMSstring) {
 	}
 	
 	if (settings.aliases) {
-		let alias = findBMSAlias(BMSstring);
+		let alias = findAlias(PMSstring);
 		if (alias) {
 			str += " = " + alias;
 		}
