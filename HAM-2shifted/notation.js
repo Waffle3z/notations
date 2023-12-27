@@ -7,6 +7,15 @@ function replaceAllEntries(s, n) {
 	return s;
 }
 
+function arrayLessOrEqual(a, b) {
+	for (let i = 0; i < a.length; i++) {
+		if (i >= b.length) return false;
+		if (a[i] < b[i]) return true;
+		if (a[i] > b[i]) return false;
+	}
+	return true;
+}
+
 function maxLexicographicArray(arrays) {
 	return arrays.reduce((maxArray, currentArray) => {
 		for (let i = 0; i < maxArray.length; i++) {
@@ -65,7 +74,7 @@ function expandArray(s, n) {
 }
 
 function arrayIsSuccessor(array) {
-	return array.at(-1) == 0;
+	return array.length == 0 || array.at(-1) == 0;
 }
 
 function arrayToString(array) {

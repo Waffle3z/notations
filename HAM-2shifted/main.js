@@ -68,28 +68,26 @@ function expand(button) {
 		button.classList.add("button-expanded");
 	}
 	let str = button.getAttribute("value") || "Root";
-	let index = children.children.length + 1;
 	if (str == "Root") {
+		let index = children.children.length + 1;
 		let label = "[0,0,"+index+"]";
 		return createButton(label, children);
 	}
 	
-	let array = expandstr(str, index);
-	let current = button;
-	let firstString = arrayToString(expandstr(str, 1));
-	while (true) {
-		let sibling = getButtonNextSibling(current);
-		let child = getButtonLastChild(current);
-		if (current != button && child && child.getAttribute("value") == firstString || (sibling && (sibling.getAttribute("value") == firstString))) {
-			array = expandstr(str, index + 1);
-			break;
+	let index = 0;
+	if (arrayIsSuccessor(expandstr(str, 0)) && !arrayIsSuccessor(expandstr(str, 1))) {
+		index++; // avoid cases where a limit of limits expands into a successor at index 0
+	}
+	let compare = nextButtonDown(button);
+	if (compare) {
+		let compareArray = stringToArray(compare.getAttribute("value"));
+		while (arrayLessOrEqual(expandstr(str, index), compareArray)) {
+			index++;
 		}
-		if (current == document.getElementById("root")) break;
-		current = getButtonParent(current);
 	}
 	
-	let isSuccessor = arrayIsSuccessor(array);
-	return createButton(arrayToString(array), children, isSuccessor);
+	let array = expandstr(str, index);
+	return createButton(arrayToString(array), children, arrayIsSuccessor(array));
 }
 
 function indentli(li, index) {
@@ -120,19 +118,23 @@ function createButton(value, parent, isLeaf) {
 	return button;
 }
 
-function moveSelectionDown() {
-	if (firstChild = getButtonFirstChild(selectedButton)) {
-		selectButton(firstChild);
-	} else if (nextSibling = getButtonNextSibling(selectedButton)) {
-		selectButton(nextSibling);
-	} else if (parentButton = getButtonParent(selectedButton)) {
+function nextButtonDown(button) {
+	if (firstChild = getButtonFirstChild(button)) {
+		return firstChild;
+	} else if (nextSibling = getButtonNextSibling(button)) {
+		return nextSibling;
+	} else if (parentButton = getButtonParent(button)) {
 		while (parentButton && !getButtonNextSibling(parentButton)) {
 			parentButton = getButtonParent(parentButton);
 		}
 		if (parentButton && (parentSibling = getButtonNextSibling(parentButton))) {
-			selectButton(parentSibling);
+			return parentSibling;
 		}
 	}
+}
+
+function moveSelectionDown() {
+	selectButton(nextButtonDown(selectedButton));
 }
 
 function moveSelectionUp() {
