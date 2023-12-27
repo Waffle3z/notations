@@ -55,15 +55,30 @@ function matrixIsSuccessor(matrix) {
 }
 
 function matrixLessThan(a, b) {
-	if (a[0].length < b[0].length) return true;
+	if (a[0].length != b[0].length) return a[0].length < b[0].length;
 	for (let i = 0; i < a.length; i++) {
 		if (i >= b.length) return false;
 		for (let j = 0; j < a[i].length; j++) {
-			if (a[i][j] < b[i][j]) return true;
-			if (a[i][j] > b[i][j]) return false;
+			if (a[i][j] != b[i][j]) return a[i][j] < b[i][j];
 		}
 	}
 	return b.length > a.length;
+}
+
+function matrixLessOrEqual(a, b) {
+	if (a[0].length != b[0].length) return a[0].length < b[0].length;
+	for (let i = 0; i < a.length; i++) {
+		if (i >= b.length) return false;
+		for (let j = 0; j < a[i].length; j++) {
+			if (a[i][j] != b[i][j]) return a[i][j] < b[i][j];
+		}
+	}
+	return b.length >= a.length;
+}
+
+function PMSexpandroot(n) {
+	let s = "("+Array(n+1).fill(0).join(",")+")("+Array(n+1).fill(1).join(",")+")";
+	return stringToMatrix(s);
 }
 
 function PMSexpand(matrix, n) {
@@ -100,6 +115,9 @@ function PMSexpand(matrix, n) {
 			}
 			newMatrix.push(column);
 		}
+	}
+	if (matrixIsSuccessor(newMatrix)) {
+		newMatrix.pop(); // fixes limits of limits expanding into successors
 	}
 	return matrixReduce(newMatrix);
 }

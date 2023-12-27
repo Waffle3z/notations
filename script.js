@@ -45,12 +45,10 @@ function getButtonPreviousSibling(button) {
 }
 
 function expandstr(str, n) {
-	let matrix = stringToMatrix(str);
-	matrix = PMSexpand(matrix, n);
-	if (matrixIsSuccessor(matrix)) {
-		return matrixReduce(matrix.slice(0, -1));
+	if (str == "Root") {
+		return PMSexpandroot(n);
 	}
-	return matrix;
+	return PMSexpand(stringToMatrix(str), n);
 }
 
 function unexpand(button) {
@@ -75,29 +73,25 @@ function expand(button) {
 		button.classList.remove("button-collapsed");
 		button.classList.add("button-expanded");
 	}
-	let str = button.getAttribute("PMSstring") || "Root";
-	let index = children.children.length + 1;
-	if (str == "Root") {
-		let label = "("+Array(index).fill(0).join(",")+")("+Array(index).fill(1).join(",")+")";
-		return createButton(label, children);
+	let str = button.getAttribute("value") || "Root";
+	
+	let index = 0;
+	if (matrixIsSuccessor(expandstr(str, 0)) && !matrixIsSuccessor(expandstr(str, 1))) {
+		index++; // avoid cases where a limit of limits expands into a successor at index 0
+	}
+	let compare = nextButtonDown(button);
+	if (compare) {
+		let compareMatrix = stringToMatrix(compare.getAttribute("value"));
+		let limit = 0;
+		while (matrixLessOrEqual(expandstr(str, index), compareMatrix)) {
+			index++;
+			limit++;
+			if (limit == 10) break;
+		}
 	}
 	
 	let matrix = expandstr(str, index);
-	let current = button;
-	let firstString = matrixToString(expandstr(str, 1));
-	while (true) {
-		let sibling = getButtonNextSibling(current);
-		let child = getButtonLastChild(current);
-		if (current != button && child && child.getAttribute("PMSstring") == firstString || (sibling && (sibling.getAttribute("PMSstring") == firstString))) {
-			matrix = expandstr(str, index + 1);
-			break;
-		}
-		if (current == document.getElementById("root")) break;
-		current = getButtonParent(current);
-	}
-	
-	let isSuccessor = matrixIsSuccessor(matrix);
-	return createButton(matrixToString(matrix), children, isSuccessor);
+	return createButton(matrixToString(matrix), children, matrixIsSuccessor(matrix));
 }
 
 function indentli(li, index) {
@@ -110,8 +104,8 @@ function indentli(li, index) {
 	}
 }
 
-function convertToNotation(PMSstring) {
-	let matrix = stringToMatrix(PMSstring);
+function convertToNotation(value) {
+	let matrix = stringToMatrix(value);
 	if (settings.notation == "AMS") {
 		matrix = PMStoAMS(matrix);
 	} else if (settings.notation == "BMS") {
@@ -127,7 +121,7 @@ function convertToNotation(PMSstring) {
 	}
 	
 	if (settings.aliases) {
-		let alias = findAlias(PMSstring);
+		let alias = findAlias(value);
 		if (alias) {
 			str += " = " + alias;
 		}
@@ -136,7 +130,7 @@ function convertToNotation(PMSstring) {
 	return str;
 }
 
-function createButton(PMSstring, parent, isLeaf) {
+function createButton(value, parent, isLeaf) {
 	const childItem = document.createElement("li");
 	indentli(childItem, parent.children.length);
 	const button = document.createElement("button");
@@ -148,24 +142,30 @@ function createButton(PMSstring, parent, isLeaf) {
 		childrenList.classList.add("children");
 		childItem.appendChild(childrenList);
 	}
-	button.setAttribute("PMSstring", PMSstring);
-	button.innerText = convertToNotation(PMSstring);
+	button.setAttribute("value", value);
+	button.innerText = convertToNotation(value);
 	parent.prepend(childItem);
 	return button;
 }
 
-function moveSelectionDown() {
-	if (firstChild = getButtonFirstChild(selectedButton)) {
-		selectButton(firstChild);
-	} else if (nextSibling = getButtonNextSibling(selectedButton)) {
-		selectButton(nextSibling);
-	} else if (parentButton = getButtonParent(selectedButton)) {
+function nextButtonDown(button) {
+	if (firstChild = getButtonFirstChild(button)) {
+		return firstChild;
+	} else if (nextSibling = getButtonNextSibling(button)) {
+		return nextSibling;
+	} else if (parentButton = getButtonParent(button)) {
 		while (parentButton && !getButtonNextSibling(parentButton)) {
 			parentButton = getButtonParent(parentButton);
 		}
 		if (parentButton && (parentSibling = getButtonNextSibling(parentButton))) {
-			selectButton(parentSibling);
+			return parentSibling;
 		}
+	}
+}
+
+function moveSelectionDown() {
+	if (nextButton = nextButtonDown(selectedButton)) {
+		selectButton(nextButton);
 	}
 }
 
@@ -186,7 +186,7 @@ function refreshTerms() {
 		let button = stack.pop();
 		let current = getButtonLastChild(button);
 		while (current) {
-			current.innerText = convertToNotation(current.getAttribute("PMSstring"));
+			current.innerText = convertToNotation(current.getAttribute("value"));
 			stack.push(current);
 			current = getButtonPreviousSibling(current);
 		}
@@ -246,9 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		} else if (event.key === "Enter") {
 			event.preventDefault();
 			let button = selectedButton;
+			const ms = Date.now();
 			for (let i = 0; i < 1000; i++) {
 				button = expand(button);
 				if (!button) break;
+				if (Date.now() - ms > 10) break;
 			}
 		} else if (event.key === " ") {
 			event.preventDefault();

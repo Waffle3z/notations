@@ -25,7 +25,6 @@ let BMS_aliases = {
 	["(0,0)(1,1)(2,1)(3,0)(4,1)(5,1)"]: "ϕ(ζ₀,0)",
 	["(0,0)(1,1)(2,1)(3,0)(4,1)(5,1)(5,1)"]: "ϕ(η₀,0)",
 	["(0,0)(1,1)(2,1)(3,0)(4,1)(5,1)(6,0)"]: "ϕ(ϕ(ω,0),0)",
-	["(0,0)(1,1)(2,1)(3,1)"]: "Γ₀",
 	["(0,0)(1,1)(2,1)(3,1)(1,0)"]: "Γ₀·ω",
 	["(0,0)(1,1)(2,1)(3,1)(1,1)"]: "ε_{Γ₀+1}",
 	["(0,0)(1,1)(2,1)(3,1)(1,1)(2,1)(3,1)"]: "Γ₁",
@@ -35,8 +34,6 @@ let BMS_aliases = {
 	["(0,0)(1,1)(2,1)(3,1)(2,1)(3,1)(2,1)(3,1)"]: "ϕ(3,0,0)",
 	["(0,0)(1,1)(2,1)(3,1)(3,0)"]: "ϕ(ω,0,0)",
 	["(0,0)(1,1)(2,1)(3,1)(3,1)"]: "ϕ(1,0,0,0)",
-	["(0,0)(1,1)(2,1)(3,1)(4,0)"]: "SVO",
-	["(0,0)(1,1)(2,1)(3,1)(4,1)"]: "LVO",
 	["(0,0)(1,1)(2,2)"]: "BHO",
 	["(0,0)(1,1)(2,2)(2,2)"]: "ψ₀(Ω₂·2)",
 	["(0,0)(1,1)(2,2)(3,0)"]: "ψ₀(Ω₂·ω)",
@@ -147,6 +144,15 @@ function Buchholz(s) {
 	expression = expression.replace(/ψ₀\(Ω²\)/g, "ζ₀");
 	expression = expression.replace(/ψ₀\(Ω³\)/g, "η₀");
 	expression = expression.replace(/ψ₁\(1\)/g, "Ω·ω");
+	expression = expression.replace(/ψ₁\(Ω²\)/g, "Ω^Ω");
+	expression = expression.replace(/ψ₀\(Ω\^Ω\)/g, "Γ₀");
+	while (true) {
+		let old = expression;
+		expression = expression.replace(/ψ₁\((Ω\^[Ω\^]*Ω)\)/g, (_, x) => "Ω^"+x);
+		if (expression == old) break;
+	}
+	expression = expression.replace(/ψ₀\(Ω\^Ω\^ω\)/g, "SVO");
+	expression = expression.replace(/ψ₀\(Ω\^Ω\^Ω\)/g, "LVO");
 	return expression;
 }
 
@@ -180,8 +186,6 @@ function findAlias(PMSstring) {
 			}
 		}
 	}
-	console.log(BMSstring, matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)(2,2)")));
-	console.log(matrix, stringToMatrix("(0,0)(1,1)(2,2)"));
 	if (matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)(2,2)"))) { // Buchholz's OCF below BHO
 		let alias = Buchholz(BMSstring);
 		if (alias) {
