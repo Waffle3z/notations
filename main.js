@@ -43,9 +43,9 @@ function getButtonPreviousSibling(button) {
 
 function expandstr(str, n) {
 	if (str == "Root") {
-		return expandRoot(n);
+		return notation.expandLimit(n);
 	}
-	return expandArray(stringToArray(str), n);
+	return notation.expand(notation.fromString(str), n);
 }
 
 function unexpand(button) {
@@ -73,19 +73,19 @@ function expand(button) {
 	let str = button.getAttribute("value") || "Root";
 	
 	let index = 0;
-	if (arrayIsSuccessor(expandstr(str, 0)) && !arrayIsSuccessor(expandstr(str, 1))) {
+	if (notation.isSuccessor(expandstr(str, 0)) && !notation.isSuccessor(expandstr(str, 1))) {
 		index++; // avoid cases where a limit of limits expands into a successor at index 0
 	}
 	let compare = nextButtonDown(button);
 	if (compare) {
-		let compareArray = stringToArray(compare.getAttribute("value"));
-		while (arrayLessOrEqual(expandstr(str, index), compareArray)) {
+		let compareTerm = notation.fromString(compare.getAttribute("value"));
+		while (notation.lessOrEqual(expandstr(str, index), compareTerm)) {
 			index++;
 		}
 	}
 	
-	let array = expandstr(str, index);
-	return createButton(arrayToString(array), children, arrayIsSuccessor(array));
+	let term = expandstr(str, index);
+	return createButton(notation.toString(term), children, notation.isSuccessor(term));
 }
 
 function indentli(li, index) {
@@ -111,7 +111,11 @@ function createButton(value, parent, isLeaf) {
 		childItem.appendChild(childrenList);
 	}
 	button.setAttribute("value", value);
-	button.innerText = value;
+	if (notation.convertToNotation) {
+		button.innerText = notation.convertToNotation(value);
+	} else {
+		button.innerText = value;
+	}
 	parent.prepend(childItem);
 	return button;
 }
@@ -145,19 +149,6 @@ function moveSelectionUp() {
 		selectButton(selection);
 	} else if (parentButton = getButtonParent(selectedButton)) {
 		selectButton(parentButton);
-	}
-}
-
-function refreshTerms() {
-	let stack = [document.getElementById("root")];
-	while (stack.length > 0) {
-		let button = stack.pop();
-		let current = getButtonLastChild(button);
-		while (current) {
-			current.innerText = convertToNotation(current.getAttribute("value"));
-			stack.push(current);
-			current = getButtonPreviousSibling(current);
-		}
 	}
 }
 

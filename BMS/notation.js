@@ -1,21 +1,3 @@
-function stringToMatrix(s) {
-	const matrix = [];
-	const columns = s.match(/\([^)]+\)/g) || [];
-	for (const v of columns) {
-		const column = v.match(/\d+/g).map(Number);
-		matrix.push(column);
-	}
-	return matrix;
-}
-
-function matrixToString(m) {
-	let s = "";
-	for (let i = 0; i < m.length; i++) {
-		s += `(${m[i].join(",")})`;
-	}
-	return s;
-}
-
 // remove rows that are all zero
 function matrixReduce(matrix) {
 	if (matrix.length == 0 || matrix[0].length <= 1) return matrix;
@@ -42,18 +24,6 @@ function matrixSimplify(matrix) {
 	});
 }
 
-function matrixIsSuccessor(matrix) {
-	const lastColumn = matrix[matrix.length - 1];
-	if (lastColumn) {
-		for (let i = 0; i < lastColumn.length; i++) {
-			if (lastColumn[i] !== 0) {
-				return false;
-			}
-		}
-		return true;
-	}
-}
-
 function matrixLessThan(a, b) {
 	if (a[0].length != b[0].length) return a[0].length < b[0].length;
 	for (let i = 0; i < a.length; i++) {
@@ -65,62 +35,120 @@ function matrixLessThan(a, b) {
 	return b.length > a.length;
 }
 
-function matrixLessOrEqual(a, b) {
-	if (a[0].length != b[0].length) return a[0].length < b[0].length;
-	for (let i = 0; i < a.length; i++) {
-		if (i >= b.length) return false;
-		for (let j = 0; j < a[i].length; j++) {
-			if (a[i][j] != b[i][j]) return a[i][j] < b[i][j];
+class notation {
+	static toString(m) {
+		let s = "";
+		for (let i = 0; i < m.length; i++) {
+			s += `(${m[i].join(",")})`;
 		}
+		return s;
 	}
-	return b.length >= a.length;
-}
 
-function PMSexpandroot(n) {
-	let s = "("+Array(n+1).fill(0).join(",")+")("+Array(n+1).fill(1).join(",")+")";
-	return stringToMatrix(s);
-}
+	static fromString(s) {
+		const matrix = [];
+		const columns = s.match(/\([^)]+\)/g) || [];
+		for (const v of columns) {
+			const column = v.match(/\d+/g).map(Number);
+			matrix.push(column);
+		}
+		return matrix;
+	}
 
-function PMSexpand(matrix, n) {
-	const lastColumn = matrix[matrix.length - 1];
-	if (!lastColumn) return [];
-	let L, Li;
-	for (let i = lastColumn.length - 1; i >= 0; i--) {
-		if (lastColumn[i] !== 0) {
-			L = lastColumn[i];
-			Li = i;
-			break;
-		}
-	}
-	const newMatrix = matrix.map(row => [...row]);
-	if (!L || n == 0) {
-		newMatrix.pop();
-		return matrixReduce(newMatrix);
-	}
-	for (let i = Li; i < lastColumn.length; i++) {
-		if (newMatrix[newMatrix.length - L - 1][i] !== 0) {
-			newMatrix[newMatrix.length - 1][i] = newMatrix[newMatrix.length - L - 1][i] + L;
-		} else {
-			newMatrix[newMatrix.length - 1][i] = 0;
-		}
-	}
-	const badPart = newMatrix.slice(-L);
-	for (let i = 1; i < n; i++) {
-		for (let j = 0; j < badPart.length; j++) {
-			const column = [...badPart[j]];
-			for (let k = 0; k < column.length; k++) {
-				if (column[k] > j + 1) {
-					column[k] += L * i;
+	static isSuccessor(matrix) {
+		const lastColumn = matrix[matrix.length - 1];
+		if (lastColumn) {
+			for (let i = 0; i < lastColumn.length; i++) {
+				if (lastColumn[i] !== 0) {
+					return false;
 				}
 			}
-			newMatrix.push(column);
+			return true;
 		}
 	}
-	if (matrixIsSuccessor(newMatrix)) {
-		newMatrix.pop(); // fixes limits of limits expanding into successors
+
+	static lessOrEqual(a, b) {
+		if (a[0].length != b[0].length) return a[0].length < b[0].length;
+		for (let i = 0; i < a.length; i++) {
+			if (i >= b.length) return false;
+			for (let j = 0; j < a[i].length; j++) {
+				if (a[i][j] != b[i][j]) return a[i][j] < b[i][j];
+			}
+		}
+		return b.length >= a.length;
 	}
-	return matrixReduce(newMatrix);
-}
+
+	static expandLimit(n) {
+		let s = "("+Array(n+1).fill(0).join(",")+")("+Array(n+1).fill(1).join(",")+")";
+		return this.fromString(s);
+	}
+
+	static expand(matrix, n) {
+		const lastColumn = matrix[matrix.length - 1];
+		if (!lastColumn) return [];
+		let L, Li;
+		for (let i = lastColumn.length - 1; i >= 0; i--) {
+			if (lastColumn[i] !== 0) {
+				L = lastColumn[i];
+				Li = i;
+				break;
+			}
+		}
+		const newMatrix = matrix.map(row => [...row]);
+		if (!L || n == 0) {
+			newMatrix.pop();
+			return matrixReduce(newMatrix);
+		}
+		for (let i = Li; i < lastColumn.length; i++) {
+			if (newMatrix[newMatrix.length - L - 1][i] !== 0) {
+				newMatrix[newMatrix.length - 1][i] = newMatrix[newMatrix.length - L - 1][i] + L;
+			} else {
+				newMatrix[newMatrix.length - 1][i] = 0;
+			}
+		}
+		const badPart = newMatrix.slice(-L);
+		for (let i = 1; i < n; i++) {
+			for (let j = 0; j < badPart.length; j++) {
+				const column = [...badPart[j]];
+				for (let k = 0; k < column.length; k++) {
+					if (column[k] > j + 1) {
+						column[k] += L * i;
+					}
+				}
+				newMatrix.push(column);
+			}
+		}
+		if (notation.isSuccessor(newMatrix)) {
+			newMatrix.pop(); // fixes limits of limits expanding into successors
+		}
+		return matrixReduce(newMatrix);
+	}
+
+	static convertToNotation(value) {
+		let matrix = notation.fromString(value);
+		if (settings.notation == "AMS") {
+			matrix = PMStoAMS(matrix);
+		} else if (settings.notation == "BMS") {
+			matrix = PMStoBMS(matrix);
+		}
+		
+		let str;
+		if (settings.notation == "0Y") {
+			matrix = PMSto0Y(matrix);
+			str = matrix.join(",");
+		} else {
+			str = notation.toString(settings.simplify ? matrixSimplify(matrix) : matrix);
+		}
+		
+		if (settings.aliases) {
+			let alias = findAlias(value);
+			if (alias) {
+				str += " = " + alias;
+			}
+		}
+		
+		return str;
+	}
+};
 
 function PMStoAMS(matrix) {
 	let newMatrix = [];

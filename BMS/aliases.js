@@ -112,7 +112,7 @@ function toSuperscript(n) {
 
 // convert PSS expressions below BHO to Buchholz's OCF
 function Buchholz(s) {
-	let matrix = stringToMatrix(s);
+	let matrix = notation.fromString(s);
 	let subscripts = "₀₁";
 	let expression = "ψ₀(0";
 	let depth = 0;
@@ -157,14 +157,14 @@ function Buchholz(s) {
 }
 
 function findAlias(PMSstring) {
-	let PMSmatrix = stringToMatrix(PMSstring);
+	let PMSmatrix = notation.fromString(PMSstring);
 	let matrix = PMStoBMS(PMSmatrix);
-	let BMSstring = matrixToString(matrix);
+	let BMSstring = notation.toString(matrix);
 	if (BMS_aliases[BMSstring]) {
 		return BMS_aliases[BMSstring];
 	}
 	
-	if (matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)"))) { // CNF
+	if (matrixLessThan(matrix, notation.fromString("(0,0)(1,1)"))) { // CNF
 		let array = matrix.map(x => x[0]);
 		return PrSStoCNF(array);
 	} else {
@@ -178,15 +178,15 @@ function findAlias(PMSstring) {
 				}
 			}
 			if (isZero) {
-				let a = findAlias(matrixToString(matrixReduce(PMSmatrix.slice(0, i))));
-				let b = findAlias(matrixToString(matrixReduce(PMSmatrix.slice(i))));
+				let a = findAlias(notation.toString(matrixReduce(PMSmatrix.slice(0, i))));
+				let b = findAlias(notation.toString(matrixReduce(PMSmatrix.slice(i))));
 				if (a && b) {
 					return a + " + " + b;
 				}
 			}
 		}
 	}
-	if (matrixLessThan(matrix, stringToMatrix("(0,0)(1,1)(2,2)"))) { // Buchholz's OCF below BHO
+	if (matrixLessThan(matrix, notation.fromString("(0,0)(1,1)(2,2)"))) { // Buchholz's OCF below BHO
 		let alias = Buchholz(BMSstring);
 		if (alias) {
 			return alias;

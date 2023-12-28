@@ -7,14 +7,6 @@ function replaceAllEntries(s, n) {
 	return s;
 }
 
-function arrayLessOrEqual(a, b) {
-	for (let i = 0; i < a.length; i++) {
-		if (i >= b.length) return false;
-		if (a[i] != b[i]) return a[i] < b[i];
-	}
-	return a.length <= b.length;
-}
-
 function maxLexicographicArray(arrays) {
 	return arrays.reduce((maxArray, currentArray) => {
 		for (let i = 0; i < maxArray.length; i++) {
@@ -28,61 +20,71 @@ function maxLexicographicArray(arrays) {
 	}, arrays[0]);
 }
 
-function expandRoot(n) {
-	return [0,0,n+1];
-}
-
-function expandArray(s, n) {
-	s = [...s];
-	const last = s[s.length - 1];
-	if (last === 0) {
-		s.pop();
-		return s;
-	} else {
-		if (s.length >= 3) {
-			if ((s.at(-1) == s.at(-2)+1) && (s.at(-2) == s.at(-3))) { // expand terms like 0,0,1 to 0 instead of 0,0,0 and 1,1,2 to 1 instead of 1,1,1
-				s.splice(-3, 3, ...Array(n).fill(s.at(-2)));
-				return s;
-			}
+class notation {
+	static lessOrEqual(a, b) {
+		for (let i = 0; i < a.length; i++) {
+			if (i >= b.length) return false;
+			if (a[i] != b[i]) return a[i] < b[i];
 		}
-		for (let i = s.length - 2; i >= 0; i--) {
-			if (s[i] < last) {
-				const t = replaceAllEntries(s.slice(i), last);
-				for (let j = i - 1; j >= 0; j--) {
-					if (s[j] <= last - 1) {
-						const u = replaceAllEntries(s.slice(j), last);
-						if (u < t) {
-							const possibleBadParts = [];
-							for (let k = j + 1; k < s.length; k++) {
-								if (s[k] < last) {
-									possibleBadParts.push(replaceAllEntries(s.slice(k, s.length - 1), last));
+		return a.length <= b.length;
+	}
+
+	static expandLimit(n) {
+		return [0,0,n+1];
+	}
+
+	static expand(s, n) {
+		s = [...s];
+		const last = s[s.length - 1];
+		if (last === 0) {
+			s.pop();
+			return s;
+		} else {
+			if (s.length >= 3) {
+				if ((s.at(-1) == s.at(-2)+1) && (s.at(-2) == s.at(-3))) { // expand terms like 0,0,1 to 0 instead of 0,0,0 and 1,1,2 to 1 instead of 1,1,1
+					s.splice(-3, 3, ...Array(n).fill(s.at(-2)));
+					return s;
+				}
+			}
+			for (let i = s.length - 2; i >= 0; i--) {
+				if (s[i] < last) {
+					const t = replaceAllEntries(s.slice(i), last);
+					for (let j = i - 1; j >= 0; j--) {
+						if (s[j] <= last - 1) {
+							const u = replaceAllEntries(s.slice(j), last);
+							if (u < t) {
+								const possibleBadParts = [];
+								for (let k = j + 1; k < s.length; k++) {
+									if (s[k] < last) {
+										possibleBadParts.push(replaceAllEntries(s.slice(k, s.length - 1), last));
+									}
 								}
+								const badPart = maxLexicographicArray(possibleBadParts);
+								while ((badPart.at(-1) < last) && (badPart.at(-1) > s.at(-2)) && badPart.length > 1)
+									badPart.pop();
+								s.pop();
+								for (let l = 0; l < n; l++) {
+									s = s.concat(badPart);
+								}
+								if (s.at(-1) === 0) s.pop(); // fixes limits of limits expanding into successors
+								return s;
 							}
-							const badPart = maxLexicographicArray(possibleBadParts);
-							while ((badPart.at(-1) < last) && (badPart.at(-1) > s.at(-2)) && badPart.length > 1)
-								badPart.pop();
-							s.pop();
-							for (let l = 0; l < n; l++) {
-								s = s.concat(badPart);
-							}
-							if (s.at(-1) === 0) s.pop(); // fixes limits of limits expanding into successors
-							return s;
 						}
 					}
 				}
 			}
 		}
 	}
-}
 
-function arrayIsSuccessor(array) {
-	return array.length == 0 || array.at(-1) == 0;
-}
+	static isSuccessor(array) {
+		return array.length == 0 || array.at(-1) == 0;
+	}
 
-function arrayToString(array) {
-	return JSON.stringify(array);
-}
+	static toString(array) {
+		return JSON.stringify(array);
+	}
 
-function stringToArray(s) {
-	return JSON.parse(s);
-}
+	static fromString(s) {
+		return JSON.parse(s);
+	}
+};
