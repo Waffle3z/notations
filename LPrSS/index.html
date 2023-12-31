@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv='cache-control' content='no-cache'> 
+	<meta http-equiv='expires' content='0'> 
+	<meta http-equiv='pragma' content='no-cache'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../styles.css">
+</head>
+<body>
+	<div id="container">
+		<div id="tree">
+		</div>
+		
+		<div id="settings">
+			<fieldset>
+				<legend>Indentation:</legend>
+				<div>
+					<input type="radio" id="expansion" value="expansion" name="indentation" checked />
+					<label for="expansion">Align recursive expansion</label>
+				</div>
+				<div>
+					<input type="radio" id="FS" value="FS" name="indentation" />
+					<label for="FS">Align fundamental sequence</label>
+				</div>
+				<div>
+					<input type="radio" id="noindent" value="noindent" name="indentation" />
+					<label for="noindent">None</label>
+				</div>
+			</fieldset>
+		</div>
+	</div>
+	
+	<script src="notation.js"></script>
+	<script src="../main.js"></script>
+</body>
+</html>
