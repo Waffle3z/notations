@@ -12,6 +12,14 @@ a:visited {
 	color: grey;
 }
 
+li {
+	list-style: none;
+}
+
+ul {
+	margin: 0;
+}
+
 .node {
 	background: none;
 	color: white;

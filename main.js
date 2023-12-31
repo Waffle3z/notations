@@ -48,7 +48,7 @@ function expandstr(str, n) {
 	return notation.expand(notation.fromString(str), n);
 }
 
-function unexpand(button) {
+function unexpandButton(button) {
 	const children = getChildren(button);
 	if (!children) return;
 	if (children.classList.contains("expanded")) {
@@ -62,7 +62,7 @@ function unexpand(button) {
 	}
 }
 
-function expand(button) {
+function expandButton(button) {
 	const children = getChildren(button);
 	if (!children) return;
 	if (!children.classList.contains("expanded")) {
@@ -110,11 +110,15 @@ function createButton(value, parent, isLeaf) {
 		childrenList.classList.add("children");
 		childItem.appendChild(childrenList);
 	}
-	button.setAttribute("value", value);
-	if (notation.convertToNotation) {
-		button.innerText = notation.convertToNotation(value);
-	} else {
-		button.innerText = value;
+	if (value !== null) {
+		button.setAttribute("value", value);
+		if (notation.convertToNotation) {
+			button.innerText = notation.convertToNotation(value);
+		} else {
+			button.innerText = value;
+		}
+	} else { // root node
+		button.innerText = notation.rootText || "Limit";
 	}
 	parent.prepend(childItem);
 	return button;
@@ -172,15 +176,62 @@ function setIndentation(newIndentation) {
 	refreshIndentation();
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-	const container = document.getElementById("tree");
-	selectButton(document.getElementById("root"));
+function initialize() {
+	let titleElement = document.head.querySelector("title");
+	if (!titleElement) {
+		titleElement = document.createElement("title");
+		document.head.appendChild(titleElement);
+	}
+	let headerElement = document.body.querySelector("h2");
+	if (!headerElement) {
+		headerElement = document.createElement("h2");
+		document.body.insertBefore(headerElement, document.body.firstChild);
+	}
+	if (notation.title) {
+		titleElement.textContent = notation.title;
+		headerElement.textContent = notation.title;
+	}
+
+	let container = document.getElementById("container");
+	if (!container) {
+		container = document.createElement("div");
+		container.setAttribute("id", "container");
+		document.body.appendChild(container);
+	}
+
+	let tree = document.getElementById("tree");
+	if (!tree) {
+		tree = document.createElement("div");
+		tree.setAttribute("id", "tree");
+		container.appendChild(tree);
+	}
+
+	let rootButton = document.getElementById("root");
+	if (!rootButton) {
+		let ul = document.createElement("ul");
+		ul.setAttribute("style", "style='padding:0px; margin:0px'");
+		tree.appendChild(ul);
+		rootButton = createButton(null, ul, false)
+		rootButton.setAttribute("id", "root");
+	}
+	selectButton(rootButton);
+
+	let footer = document.getElementById("footer");
+	if (!footer) {
+		footer = document.createElement("div");
+		footer.setAttribute("id", "footer");
+		if (notation.footer) {
+			footer.innerHTML = notation.footer + " | ";
+		}
+		footer.innerHTML += "<a href='https://waffle3z.github.io/notations/'>Index</a>";
+		document.body.appendChild(footer);
+	}
 	
 	container.addEventListener("click", (event) => {
 		const targetNode = event.target.closest(".node");
 		if (targetNode) {
 			event.preventDefault();
-			expand(targetNode);
+			expandButton(targetNode);
 			selectButton(targetNode);
 		}
 	});
@@ -194,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			moveSelectionUp();
 		} else if (event.key === "Backspace") {
 			event.preventDefault();
-			if (!unexpand(selectedButton)) {
+			if (!unexpandButton(selectedButton)) {
 				moveSelectionUp();
 			}
 		} else if (event.key === "Enter") {
@@ -202,13 +253,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			let button = selectedButton;
 			const ms = Date.now();
 			for (let i = 0; i < 1000; i++) {
-				button = expand(button);
+				button = expandButton(button);
 				if (!button) break;
 				if (Date.now() - ms > 10) break;
 			}
 		} else if (event.key === " ") {
 			event.preventDefault();
-			expand(selectedButton);
+			expandButton(selectedButton);
 		}
 	});
 	
@@ -217,4 +268,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			setIndentation(radioInput.value);
 		});
 	});
-});
+}
+
+document.addEventListener("DOMContentLoaded", initialize);
