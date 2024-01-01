@@ -23,7 +23,6 @@ class notation {
 		for (let i = 1; i < n; i++) {
 			out = out.concat(badPart.map(v => v + increment * i));
 		}
-		console.log(a, n, out, badPart, increment, root);
 		return out
 	}
 

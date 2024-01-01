@@ -9,7 +9,7 @@ a:link {
 }
 
 a:visited {
-	color: grey;
+	color: #aaa;
 }
 
 li {
@@ -18,6 +18,7 @@ li {
 
 ul {
 	margin: 0;
+	padding: 0;
 }
 
 .node {
@@ -25,9 +26,10 @@ ul {
 	color: white;
 	border: none;
 	cursor: pointer;
-	padding: 0;
 	text-align: left;
 	font-family: Consolas;
+	margin-left: 5px;
+	margin-right: 5px;
 }
 
 .node:focus {
@@ -40,18 +42,24 @@ ul {
 	list-style-type: none;
 }
 
-.button-expanded::after {
-	content: "▼";
-	margin-left: 5px;
-}
-
-.button-collapsed::after {
-	content: "►";
-	margin-left: 5px;
-}
-
 .expanded {
 	display: block;
+}
+
+.toggle {
+	background: #474747;
+	border-radius: 8px;
+	color: #ccc;
+	border: none;
+	cursor: pointer;
+	margin-right: 1px;
+	text-align: center;
+	font-family: Consolas;
+	width: 25px;
+}
+
+.hidden {
+	visibility: hidden;
 }
 
 #container {
@@ -73,5 +81,11 @@ ul {
 
 #settings {
 	width: 300px;
-	padding: 20px;
+	padding-right: 10px;
+}
+
+@media (max-width: 1000px) { /*for small horizontal displays*/
+	#settings {
+		width: 25%;
+	}
 }

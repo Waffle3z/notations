@@ -1,4 +1,6 @@
 class notation {
+	static title = "HPrSS";
+	
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
 			if (i >= b.length) return false;

@@ -13,32 +13,32 @@ function selectButton(button) {
 }
 
 function getChildren(button) {
-	return button.nextElementSibling;
+	return button.parentElement.querySelector(".children");
 }
 function getButtonParent(button) {
 	if (button != document.getElementById("root")) {
-		return button.parentElement.parentElement.previousElementSibling;
+		return button.parentElement.parentElement.parentElement.querySelector(".node");
 	}
 }
 function getButtonFirstChild(button) {
 	if (!(children = getChildren(button))) return;
 	if (!(li = children.firstElementChild)) return;
-	return li.firstElementChild;
+	return li.querySelector(".node");
 }
 function getButtonLastChild(button) {
 	if (!(children = getChildren(button))) return;
 	if (!(li = children.lastElementChild)) return;
-	return li.firstElementChild;
+	return li.querySelector(".node");
 }
 function getButtonNextSibling(button) {
 	if (button == document.getElementById("root")) return;
 	let sibling = button.parentElement.nextElementSibling;
-	if (sibling) return sibling.firstElementChild;
+	if (sibling) return sibling.querySelector(".node");
 }
 function getButtonPreviousSibling(button) {
 	if (button == document.getElementById("root")) return;
 	let sibling = button.parentElement.previousElementSibling;
-	if (sibling) return sibling.firstElementChild;
+	if (sibling) return sibling.querySelector(".node");
 }
 
 function expandstr(str, n) {
@@ -55,8 +55,7 @@ function unexpandButton(button) {
 		children.removeChild(children.firstElementChild);
 		if (!children.firstElementChild) {
 			children.classList.toggle("expanded");
-			button.classList.remove("button-expanded");
-			button.classList.add("button-collapsed");
+			button.parentElement.querySelector(".collapse").classList.add("hidden");
 		}
 		return true;
 	}
@@ -67,8 +66,7 @@ function expandButton(button) {
 	if (!children) return;
 	if (!children.classList.contains("expanded")) {
 		children.classList.toggle("expanded");
-		button.classList.remove("button-collapsed");
-		button.classList.add("button-expanded");
+		button.parentElement.querySelector(".collapse").classList.remove("hidden");
 	}
 	let str = button.getAttribute("value") || "Root";
 	
@@ -90,26 +88,43 @@ function expandButton(button) {
 
 function indentli(li, index) {
 	if (settings.indentation == "expansion") {
-		li.style.marginLeft = `calc(40px * ${index} - 40px)`;
+		li.style.marginLeft = `calc(25px * ${index})`;
 	} else if (settings.indentation == "noindent") {
-		li.style.marginLeft = `-40px`;
-	} else if (settings.indentation == "FS") {
 		li.style.marginLeft = ``;
+	} else if (settings.indentation == "FS") {
+		li.style.marginLeft = `25px`;
 	}
 }
 
 function createButton(value, parent, isLeaf) {
 	const childItem = document.createElement("li");
 	indentli(childItem, parent.children.length);
+
 	const button = document.createElement("button");
-	childItem.appendChild(button);
 	button.classList.add("node");
+
+	const collapse = document.createElement("button");
+	collapse.classList.add("toggle");
+	collapse.classList.add("collapse")
+	collapse.classList.add("hidden");
+	collapse.innerText = "<";
+	childItem.appendChild(collapse);
+	collapse.addEventListener("click", () => unexpandButton(button));
+
+	const expand = document.createElement("button");
+	expand.classList.add("toggle");
+	if (isLeaf) expand.classList.add("hidden");
+	expand.innerText = "+";
+	childItem.appendChild(expand);
+	expand.addEventListener("click", () => expandButton(button));
+
+	childItem.appendChild(button);
 	if (!isLeaf) {
-		button.classList.add("button-collapsed");
 		const childrenList = document.createElement("ul");
 		childrenList.classList.add("children");
 		childItem.appendChild(childrenList);
 	}
+	
 	if (value !== null) {
 		button.setAttribute("value", value);
 		if (notation.convertToNotation) {
@@ -189,9 +204,8 @@ function initialize() {
 	}
 	if (notation.title) {
 		titleElement.textContent = notation.title;
-		headerElement.textContent = notation.title;
+		headerElement.textContent = notation.header || notation.title;
 	}
-
 	let container = document.getElementById("container");
 	if (!container) {
 		container = document.createElement("div");
@@ -208,10 +222,7 @@ function initialize() {
 
 	let rootButton = document.getElementById("root");
 	if (!rootButton) {
-		let ul = document.createElement("ul");
-		ul.setAttribute("style", "style='padding:0px; margin:0px'");
-		tree.appendChild(ul);
-		rootButton = createButton(null, ul, false)
+		rootButton = createButton(null, tree, false)
 		rootButton.setAttribute("id", "root");
 	}
 	selectButton(rootButton);
@@ -227,7 +238,8 @@ function initialize() {
 		document.body.appendChild(footer);
 	}
 	
-	container.addEventListener("click", (event) => {
+	document.addEventListener("mousedown", (event) => {
+		event.preventDefault();
 		const targetNode = event.target.closest(".node");
 		if (targetNode) {
 			event.preventDefault();

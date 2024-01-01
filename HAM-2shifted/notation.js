@@ -21,6 +21,9 @@ function maxLexicographicArray(arrays) {
 }
 
 class notation {
+	static title = "HAM 2-shifted";
+	static header = "H-A-M's 2-shifted sequence system";
+	static footer = "Definition of <a href='https://github.com/H-A-M-G-E-R/large-number-programs/blob/main/2-shifted%20sequence%20system.py'>2-shifted sequence system</a> by H-A-M-G-E-R";
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
 			if (i >= b.length) return false;
