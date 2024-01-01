@@ -2,19 +2,6 @@ settings.notation = "BMS";
 settings.simplify = false;
 settings.aliases = true;
 
-function refreshTerms() {
-	let stack = [document.getElementById("root")];
-	while (stack.length > 0) {
-		let button = stack.pop();
-		let current = getButtonLastChild(button);
-		while (current) {
-			current.innerText = notation.convertToNotation(current.getAttribute("value"));
-			stack.push(current);
-			current = getButtonPreviousSibling(current);
-		}
-	}
-}
-
 function setNotation(newNotation) {
 	settings.notation = newNotation;
 	refreshTerms();
