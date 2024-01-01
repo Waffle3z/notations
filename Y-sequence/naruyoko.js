@@ -48,7 +48,6 @@ function calcMountain(row) {
 
 function calcDiagonal(mountain) {
 	let diagonal = [];
-	let diagonalTree = [];
 	for (let i = 0; i < mountain[0].length; i++){ // only one diagonal exists for each left-side-up diagonal line
 		for (let j = mountain.length-1; j >= 0; j--){ // prioritize the top
 			let k = mountain[j].findIndex(x => x.position + j >= i);
@@ -71,7 +70,6 @@ function calcDiagonal(mountain) {
 				}
 				if (!mountain[height][lastIndex] || mountain[height][lastIndex].parentIndex == -1) {
 					diagonal.push(mountain[j][k].value);
-					diagonalTree.push((mountain[height][lastIndex] ? mountain[height][lastIndex].position : -1) + height);
 					break;
 				}
 			}
@@ -82,15 +80,13 @@ function calcDiagonal(mountain) {
 }
 
 function cloneMountain(mountain) {
-	return mountain.map(layer => {
-		return layer.map(element => {
-			return {
-				value: element.value,
-				position: element.position,
-				parentIndex: element.parentIndex,
-			};
-		});
-	});
+	return mountain.map(layer => layer.map(element => {
+		return {
+			value: element.value,
+			position: element.position,
+			parentIndex: element.parentIndex,
+		};
+	}));
 }
 
 function getBadRoot(mountain) {
