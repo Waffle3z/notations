@@ -14,7 +14,7 @@ class notation {
 	}
 
 	static expand(a, n) {
-		return notation.fromString(expand(notation.toString(a), n, true));
+		return expand(mountainFromArray(a), n);
 	}
 
 	static convertToNotation(value) {
