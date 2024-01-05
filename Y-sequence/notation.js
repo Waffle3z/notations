@@ -1,5 +1,6 @@
 class notation {
 	static title = "Y-sequence";
+	static hasAliases = true;
 
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
@@ -40,8 +41,6 @@ class notation {
 		return JSON.parse("[" + s + "]");
 	}
 };
-
-settings.aliases = true;
 
 let Y_aliases = {
 	["1,2,4"]: "ε₀",
@@ -102,11 +101,3 @@ let Y_aliases = {
 function findAlias(value) {
 	if (Y_aliases[value]) return Y_aliases[value];
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-	const aliasesCheckbox = document.getElementById("aliases");
-	aliasesCheckbox.addEventListener('change', function() {
-		settings.aliases = aliasesCheckbox.checked;
-		refreshTerms();
-	});
-});

@@ -1,6 +1,7 @@
 let selectedButton = null;
 let settings = {
 	indentation: "expansion",
+	aliases: false
 };
 
 function selectButton(button) {
@@ -240,6 +241,60 @@ function initialize() {
 	}
 	selectButton(rootButton);
 
+	let settingsContainer = document.getElementById("settings");
+	if (!settingsContainer) {
+		settingsContainer = document.createElement("div");
+		settingsContainer.setAttribute("id", "settings");
+		container.appendChild(settingsContainer);
+	}
+
+	let indentationContainer = settingsContainer.querySelector("#indentationContainer");
+	if (!indentationContainer) {
+
+		indentationContainer = document.createElement("fieldset");
+		indentationContainer.setAttribute("id", "indentationContainer");
+		settingsContainer.appendChild(indentationContainer);
+		indentationContainer.innerHTML = `
+		<legend>Indentation:</legend>
+		<div>
+			<input type="radio" id="expansion" value="expansion" name="indentation" checked />
+			<label for="expansion">Align recursive expansion</label>
+		</div>
+		<div>
+			<input type="radio" id="FS" value="FS" name="indentation" />
+			<label for="FS">Align fundamental sequence</label>
+		</div>
+		<div>
+			<input type="radio" id="noindent" value="noindent" name="indentation" />
+			<label for="noindent">None</label>
+		</div>`;
+	}
+	indentationContainer.querySelectorAll('input[name="indentation"]').forEach(function(radioInput) {
+		radioInput.addEventListener('change', function() {
+			setIndentation(radioInput.value);
+		});
+	});
+
+	if (notation.hasAliases) {
+		settings.aliases = true;
+
+		let aliasesContainer = settingsContainer.querySelector("#aliasesContainer");
+		if (!aliasesContainer) {
+			aliasesContainer = document.createElement("div");
+			aliasesContainer.setAttribute("id", "aliasesContainer");
+			settingsContainer.appendChild(aliasesContainer);
+			aliasesContainer.innerHTML = `
+			<input type="checkbox" id="aliases" checked />
+			<label for="aliases">Show ordinal names</label>`;
+		}
+
+		const aliasesCheckbox = aliasesContainer.querySelector("#aliases");
+		aliasesCheckbox.addEventListener('change', function() {
+			settings.aliases = aliasesCheckbox.checked;
+			refreshTerms();
+		});
+	}
+
 	let footer = document.getElementById("footer");
 	if (!footer) {
 		footer = document.createElement("div");
@@ -247,18 +302,21 @@ function initialize() {
 		if (notation.footer) {
 			footer.innerHTML = notation.footer + " | ";
 		}
-		footer.innerHTML += "<a href='https://waffle3z.github.io/notations/'>Index</a>";
+		footer.innerHTML += "<a href='..'>Index</a>";
 		document.body.appendChild(footer);
 	}
 	
 	document.addEventListener("mousedown", (event) => {
-		event.preventDefault();
 		const targetNode = event.target.closest(".node");
 		if (targetNode) {
 			event.preventDefault();
 			expandButton(targetNode);
 			selectButton(targetNode);
 		}
+	});
+
+	document.addEventListener("click", (event) => {
+		selectedButton.focus();
 	});
 
 	container.addEventListener("keydown", (event) => {
@@ -286,12 +344,6 @@ function initialize() {
 			event.preventDefault();
 			expandButton(selectedButton);
 		}
-	});
-	
-	document.querySelectorAll('input[name="indentation"]').forEach(function(radioInput) {
-		radioInput.addEventListener('change', function() {
-			setIndentation(radioInput.value);
-		});
 	});
 }
 

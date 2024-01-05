@@ -1,6 +1,5 @@
 settings.notation = "BMS";
 settings.simplify = false;
-settings.aliases = true;
 
 function setNotation(newNotation) {
 	settings.notation = newNotation;
@@ -17,12 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	const simplifyCheckbox = document.getElementById("simplify");
 	simplifyCheckbox.addEventListener('change', function() {
 		settings.simplify = simplifyCheckbox.checked;
-		refreshTerms();
-	});
-
-	const aliasesCheckbox = document.getElementById("aliases");
-	aliasesCheckbox.addEventListener('change', function() {
-		settings.aliases = aliasesCheckbox.checked;
 		refreshTerms();
 	});
 });

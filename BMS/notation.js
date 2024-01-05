@@ -37,6 +37,7 @@ function matrixLessThan(a, b) {
 
 class notation {
 	static title = "BMS Explorer";
+	static hasAliases = true;
 	
 	static toString(m) {
 		let s = "";
