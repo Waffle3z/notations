@@ -15,17 +15,21 @@ class notation {
 
 	static expand(a, n) {
 		function parent(ind) {
-			return a.findLastIndex((v, i) => (i < ind) && ((v <= Math.min(...a)) || (v < a[ind])));
+			return a.findLastIndex((v, i) => i == 0 || (i < ind && v < a[ind]));
 		}
-		let end = a.length - 1;
-		let root = parent(end);
-		let runn = root;
-		while ((a[runn] > Math.min(...a)) && ((a.at(-1)-a[parent(runn)])*(a.length-root) >= (a.at(-1)-a[root])*(a.length-parent(runn)))) runn = parent(runn);
-		let delta = a.pop()-a[runn]-1;
+		let length = a.length;
+		let root = parent(length - 1);
+		let cutNode = a.pop();
+		while (root > 0) {
+			let p = parent(root);
+			// (cutNode - a[p])/(length - p) < (cutNode - a[root])/(length - root)
+			if ((cutNode - a[p])*(length - root) < (cutNode - a[root])*(length - p)) break;
+			root = p;
+		}
+		let delta = cutNode - a[root] - 1;
+		let badPart = a.slice(root);
 		for (let i = 1; i <= n; i++) {
-			for (let j = runn; j < end; j++) {
-				a.push(a[j]+delta*i);
-			}
+			a = a.concat(badPart.map(v => v + delta*i));
 		}
 		return a;
 	}
