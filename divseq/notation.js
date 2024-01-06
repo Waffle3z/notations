@@ -15,7 +15,7 @@ class notation {
 
 	static expand(a, n) {
 		function parent(ind) {
-			return a.findLastIndex((v, i) => v == 0 || (i < ind && v < a[ind]));
+			return a.findLastIndex((v, i) => (i < ind || i == 0) && (v == 0 || v < a[ind]));
 		}
 		let length = a.length;
 		let root = parent(length - 1);
@@ -39,7 +39,7 @@ class notation {
 	}
 
 	static toString(array) {
-		return JSON.stringify(array).slice(1,-1);
+		return array.join(",");
 	}
 
 	static fromString(s) {
