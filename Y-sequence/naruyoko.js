@@ -5,6 +5,10 @@ function calcMountain(row) {
 	while (true) {
 		let hasNextRow = false;
 		for (let i = 0; i < row.length; i++) {
+			if (row[i].forcedParent && row[i].parentIndex != -1) {
+				hasNextRow = true;
+				continue;
+			}
 			let p = 0;
 			if (mountain.length == 1) {
 				p = row[i].position + 1;
@@ -48,17 +52,19 @@ function calcMountain(row) {
 
 function calcDiagonal(mountain) {
 	let diagonal = [];
-	for (let i = 0; i < mountain[0].length; i++){ // only one diagonal exists for each left-side-up diagonal line
-		for (let j = mountain.length-1; j >= 0; j--){ // prioritize the top
+	let diagonalTree = [];
+	for (let i = 0; i < mountain[0].length; i++) { // only one diagonal exists for each left-side-up diagonal line
+		for (let j = mountain.length-1; j >= 0; j--) { // prioritize the top
 			let k = mountain[j].findIndex(x => x.position + j >= i);
 			if (k == -1 || mountain[j][k].position + j != i) continue;
 			let height = j;
 			let lastIndex = k;
+			let last = mountain[height][lastIndex];
 			while (true) {
 				if (height == 0) {
-					lastIndex = mountain[height][lastIndex].parentIndex;
+					lastIndex = last.parentIndex;
 				} else {
-					let l = mountain[height-1].findIndex(x => x.position == mountain[height][lastIndex].position + 1); // find right-down
+					let l = mountain[height-1].findIndex(x => x.position == last.position + 1); // find right-down
 					l = mountain[height-1][l].parentIndex; // go to its parent=left-down
 					let m = mountain[height].findIndex(x => x.position >= mountain[height-1][l].position - 1); // find up-left of that=left
 					if (mountain[height][m].position == mountain[height-1][l].position - 1) { // left exists
@@ -68,15 +74,27 @@ function calcDiagonal(mountain) {
 						lastIndex = l;
 					}
 				}
-				if (!mountain[height][lastIndex] || mountain[height][lastIndex].parentIndex == -1) {
+				last = mountain[height][lastIndex];
+				if (!last || last.parentIndex == -1) {
 					diagonal.push(mountain[j][k].value);
+					diagonalTree.push((last ? last.position : -1) + height);
 					break;
 				}
 			}
-			break;
+			break;	
 		}
 	}
-	return diagonal;
+	return diagonal.map((v, i) => {
+		let pw = diagonal.findLastIndex((x, j) => j < i && x < v);
+		let p = diagonalTree[i];
+		while (p > 0 && diagonal[p] >= diagonal[i]) p = diagonalTree[p];
+		return {
+		  value: v,
+		  position: i,
+		  parentIndex: p == pw ? -1 : p,
+		  forcedParent: p != pw
+		};
+	});
 }
 
 function cloneMountain(mountain) {
@@ -85,18 +103,16 @@ function cloneMountain(mountain) {
 			value: element.value,
 			position: element.position,
 			parentIndex: element.parentIndex,
+			forcedParent: element.forcedParent
 		};
 	}));
 }
 
 function getBadRoot(mountain) {
-	let diagonal = calcDiagonal(mountain);
-	if (diagonal.at(-1) != 1) return getBadRoot(mountainFromArray(diagonal));
-	for (let i = mountain.length - 1; i > 0; i--) {
-		if (mountain[i].at(-1).position + i == mountain[0].length-1) {
-			return mountain[i-1][mountain[i-1].at(-1).parentIndex].position + i - 1;
-		}
-	}
+	let diagonal = calcMountain(calcDiagonal(mountain));
+	if (diagonal[0].at(-1).value != 1) return getBadRoot(diagonal);
+	let i = mountain.findLastIndex((v, i) => v.at(-1).position + i == mountain[0].length-1);
+	return mountain[i-1][mountain[i-1].at(-1).parentIndex].position + i-1;
 }
 
 function mountainFromArray(a) {
@@ -120,13 +136,16 @@ function expand(mountain, n) {
 		result[0].pop();
 	} else {
 		let cutHeight = mountain.findLastIndex((v, i) => v.at(-1).position + i == mountain[0].length - 1);
-		let actualCutHeight = cutHeight;
+		for (let i = 0; i <= cutHeight; i++) result[i].pop(); // cut child
+		if (!result.at(-1).length) result.pop();
+		let cutLength = result[0].length;
+
 		let badRootSeam = getBadRoot(mountain);
 		let badRootHeight;
 		let diagonal = calcDiagonal(mountain);
 		let newDiagonal;
 
-		let yamakazi = diagonal.at(-1) == 1; // Yamakazi-Funka dualilty
+		let yamakazi = diagonal.at(-1).value == 1; // Yamakazi-Funka dualilty
 		if (yamakazi) { // copy bad part n times
 			newDiagonal = diagonal.slice(0, -1);
 			let badPart = newDiagonal.slice(badRootSeam);
@@ -134,19 +153,16 @@ function expand(mountain, n) {
 			cutHeight--;
 			badRootHeight = cutHeight;
 		} else {
-			newDiagonal = expand(mountainFromArray(diagonal), n);
+			newDiagonal = expand(calcMountain(diagonal), n)[0];
 			badRootHeight = mountain.findLastIndex((v, i) => {
 				let x = v.find(x => x.position + i >= badRootSeam);
 				return x && x.position + i == badRootSeam;
 			});
 		}
-		for (let i = 0; i <= actualCutHeight; i++) result[i].pop(); // cut child
-		if (!result.at(-1).length) result.pop();
-		let afterCutLength = result[0].length;
 
 		// Create Mt.Fuji shell
 		for (let i = 1; i <= n; i++) { // iteration
-			for (let j = badRootSeam; j < afterCutLength; j++) { // seam
+			for (let j = badRootSeam; j < cutLength; j++) { // seam
 				let isAscending = false;
 				let p = mountain[badRootHeight].findIndex(x => x.position + badRootHeight >= j);
 				if (mountain[badRootHeight][p].position + badRootHeight == j) {
@@ -202,15 +218,15 @@ function expand(mountain, n) {
 					if (mountain[sy][sourceParentIndex]) {
 						let pos = mountain[sy][sourceParentIndex].position + sy;
 						if (pos >= badRootSeam) {
-							parentPosition = pos + parentShifts*(afterCutLength-badRootSeam) - k;
+							parentPosition = pos + parentShifts*(cutLength-badRootSeam) - k;
 						} else {
 							parentPosition = pos - k;
 						}
 					}
 					let parentIndex = result[k].findIndex(x => x.position == parentPosition);
 					result[k].push({
-						value: parentIndex == -1 ? newDiagonal[j+(afterCutLength-badRootSeam)*i] : NaN,
-						position: j + (afterCutLength-badRootSeam)*i - k,
+						value: parentIndex == -1 ? newDiagonal[j+(cutLength-badRootSeam)*i].value : NaN,
+						position: j + (cutLength-badRootSeam)*i - k,
 						parentIndex: parentIndex,
 					});
 				}
@@ -230,5 +246,5 @@ function expand(mountain, n) {
 			result[i][j].value = result[i][result[i][j].parentIndex].value + result[i+1][k].value;
 		}
 	}
-	return mountainToArray(result);
+	return result;
 }

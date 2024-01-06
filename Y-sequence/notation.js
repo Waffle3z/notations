@@ -15,7 +15,7 @@ class notation {
 	}
 
 	static expand(a, n) {
-		return expand(mountainFromArray(a), n);
+		return mountainToArray(expand(mountainFromArray(a), n));
 	}
 
 	static convertToNotation(value) {
