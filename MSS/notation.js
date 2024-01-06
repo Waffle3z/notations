@@ -1,5 +1,6 @@
 class notation {
-	static title = "divseq";
+	static title = "MSS";
+	static header = "Mean Sequence System";
 
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
