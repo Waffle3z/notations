@@ -70,7 +70,7 @@ ul {
 
 #tree {
 	flex: 1;
-	padding: 20px;
+	padding: 20px 5px 5px 0px;
 	white-space: nowrap;
 }
 

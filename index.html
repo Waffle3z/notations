@@ -40,7 +40,7 @@
 		</div>
 	</div>
 
-	<div style="padding: 10px; bottom: 0;">
+	<div style="padding: 10px; bottom: 0; line-height: 1.4">
 		<a href="https://github.com/Waffle3z/notations">Github</a><br>
 		<a href="BMS/">BMS</a><br>
 		<a href="Y-sequence/">Y-sequence</a><br>
@@ -49,7 +49,15 @@
 		<a href="LPrSS/">LPrSS</a><br>
 		<a href="Shifted%20LPrSS/">Shifted LPrSS</a><br>
 		<a href="3-shifted%20LPrSS/">3-shifted LPrSS</a><br>
-		<a href="HAM-2shifted/">H-A-M's 2-shifted sequence</a><br>
+
+		<div style="width: fit-content; line-height: normal">
+			<button type="button" id="experimentalButton" style="width:100%; background:#474747; color:#ccc; border:none; cursor:pointer; font-family:Consolas; margin-top:5px;">Experimental</button>
+			<div id="experimental" style="visibility: hidden; background: #333; padding: 5px 10px 5px 10px; line-height: 1.4">
+				<a href="Parent%20LPrSS/">Parent LPrSS</a><br>
+				<a href="divseq/">divseq</a><br>
+				<a href="HAM-2shifted/">H-A-M's 2-shifted sequence</a><br>
+			</div>
+		</div>
 	</div>
 	
 	<div id="footer">
@@ -57,5 +65,13 @@
 
 	<script src="worm/notation.js"></script>
 	<script src="main.js"></script>
+
+	<script>
+		let toggle = document.getElementById("experimentalButton");
+		let experimental = document.getElementById("experimental");
+		toggle.addEventListener("click", function() {
+			experimental.style.visibility = experimental.style.visibility == "hidden" ? "visible" : "hidden";
+		});
+	</script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 class notation {
-	static title = "divseq";
+	static title = "Parent LPrSS";
 
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
@@ -17,14 +17,12 @@ class notation {
 		function parent(ind) {
 			return a.findLastIndex((v, i) => v == 0 || (i < ind && v < a[ind]));
 		}
-		let length = a.length;
-		let root = parent(length - 1);
+		let root = parent(a.length - 1);
 		let cutNode = a.pop();
-		while (root > 0) {
-			let p = parent(root);
-			// (cutNode - a[p])/(length - p) < (cutNode - a[root])/(length - root)
-			if ((cutNode - a[p])*(length - root) < (cutNode - a[root])*(length - p)) break;
-			root = p;
+		let diff = cutNode - a[root];
+		for (let i = 1; i < diff; i++) {
+			root = parent(root);
+			if (root == 0) break;
 		}
 		let delta = cutNode - a[root] - 1;
 		let badPart = a.slice(root);
