@@ -14,7 +14,7 @@ function flatten(x) {
 }
 
 class notation {
-	static title = "Parent Sequence";
+	static title = "Triangular Sequence System";
 
 	static lessOrEqual(a, b) {
 		a = flatten(a);
@@ -49,14 +49,24 @@ class notation {
 		let cutNode = a.at(-1);
 		let root = a.length - 1;
 		let diff = cutNode - a[parent(a.length - 1)];
+		let delta = 0;
 		for (let i = 0; i < diff; i++) {
-			root = parent(root);
-			if (a[root] == 0) break;
+			if (a[root] == 0) {
+				delta++;
+			} else {
+				root = parent(root);
+			}
 		}
-		let delta = cutNode - a[root] - 1;
+		let increment = cutNode - a[root] - 1;
 		let badPart = a.slice(root, -1);
+
 		for (let i = 1; i <= n; i++) {
-			parents.at(-1).push(badPart.map(v => v + delta*i));
+			if (delta == 0) {
+				parents.at(-1).push(badPart.map(v => v + increment*i));
+			} else {
+				parents.at(-1).push(badPart.map(v => v + increment));
+				increment += i + delta;
+			}
 		}
 		return copy;
 	}
