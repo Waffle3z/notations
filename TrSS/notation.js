@@ -57,26 +57,23 @@ class notation {
 				root = parent(root);
 			}
 		}
-		let increment = cutNode - a[root] - 1;
 		let badPart = a.slice(root, -1);
-		let badPartHeight = 1;
-		let bottom = badPart.length - 1;
-		while (bottom > 0) {
-			bottom = badPart.findLastIndex((v, i) => i < bottom && v < badPart[bottom]);
-			badPartHeight++;
-		}
-
-		for (let i = 1; i <= n; i++) {
-			if (delta == 0) {
+		let increment = cutNode - a[root] - 1;
+		if (delta == 0) {
+			for (let i = 1; i <= n; i++) {
 				parents.at(-1).push(badPart.map(v => v + increment*i));
-			} else {
-				let offset = increment;
-				if (i > 1) {
-					let last = flatten(copy).at(-1);
-					offset = last + delta + badPartHeight * (i - 1);
-				}
-				parents.at(-1).push(badPart.map(v => v + offset));
-				increment += i + delta;
+			}
+		} else {
+			let badPartHeight = 1;
+			let bottom = badPart.length - 1;
+			while (bottom > 0) {
+				bottom = badPart.findLastIndex((v, i) => i < bottom && v < badPart[bottom]);
+				badPartHeight++;
+			}
+	
+			for (let i = 1; i <= n; i++) {
+				parents.at(-1).push(badPart.map(v => v + increment));
+				increment += badPart.at(-1) + badPartHeight * i + delta;
 			}
 		}
 		return copy;
