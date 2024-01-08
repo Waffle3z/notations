@@ -1,3 +1,20 @@
+let offset = 0;
+document.addEventListener("DOMContentLoaded", () => {
+	setTimeout(function() { // hack in an optional offset parameter
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const requestedOffset = Number(urlParams.get("offset"));
+		if (requestedOffset) {
+			offset = requestedOffset;
+			let title = document.head.querySelector("title");
+			if (title) title.innerText = "MSS " + offset;
+			let h2 = document.body.querySelector("h2");
+			if (h2) h2.innerText = "MSS (offset: "+offset+")";
+		}
+	}, 1);
+});
+
+
 class notation {
 	static title = "MSS";
 	static header = "Mean Sequence System";
@@ -24,7 +41,7 @@ class notation {
 		while (root > 0) {
 			let p = parent(root);
 			// (cutNode - a[p])/(length - p) < (cutNode - a[root])/(length - root)
-			if ((cutNode - a[p])*(length - root) < (cutNode - a[root])*(length - p)) break;
+			if ((cutNode - a[p])*(length - root + offset) < (cutNode - a[root])*(length - p + offset)) break;
 			root = p;
 		}
 		let delta = cutNode - a[root] - 1;
