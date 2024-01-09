@@ -1,15 +1,22 @@
 let offset = 0;
+let version = "default";
 document.addEventListener("DOMContentLoaded", () => {
 	setTimeout(function() { // hack in an optional offset parameter
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
 		const requestedOffset = Number(urlParams.get("offset"));
+		let title = document.head.querySelector("title");
+		let h2 = document.body.querySelector("h2");
 		if (requestedOffset) {
 			offset = requestedOffset;
-			let title = document.head.querySelector("title");
-			if (title) title.innerText = "MSS " + offset;
-			let h2 = document.body.querySelector("h2");
-			if (h2) h2.innerText = "MSS (offset: "+offset+")";
+			if (title) title.innerText = `MSS ${offset}`;
+			if (h2) h2.innerText = `MSS (offset: ${offset})`;
+		}
+		const requestedVersion = urlParams.get("version");
+		if (requestedVersion) {
+			version = requestedVersion;
+			if (title) title.innerText = `MSS ${version} ${offset}`;
+			if (h2) h2.innerText = `MSS (version: ${version} offset: ${offset})`;
 		}
 	}, 1);
 });
@@ -35,14 +42,30 @@ class notation {
 		function parent(ind) {
 			return a.findLastIndex((v, i) => (i < ind || i == 0) && (v == 0 || v < a[ind]));
 		}
-		let length = a.length;
-		let root = parent(length - 1);
+		let root = parent(a.length - 1);
 		let cutNode = a.pop();
-		while (root > 0) {
-			let p = parent(root);
-			// (cutNode - a[p])/(length - p) < (cutNode - a[root])/(length - root)
-			if ((cutNode - a[p])*(length - root + offset) < (cutNode - a[root])*(length - p + offset)) break;
-			root = p;
+		let lastDifference = cutNode - a[root];
+		let lastDistance = a.length - root;
+		if (version == "default") {
+			while (root > 0) {
+				let p = parent(root);
+				let difference = cutNode - a[p];
+				let distance = a.length - p;
+				// difference/distance < lastDifference/lastDistance
+				if (difference*(lastDistance+offset) < lastDifference*(distance+offset)) break;
+				root = p;
+			}
+		} else if (version == "parent") {
+			while (root > 0) {
+				let p = parent(root);
+				let difference = cutNode - a[p];
+				let distance = root - p;
+				// difference/distance < lastDifference/lastDistance
+				if (difference*(lastDistance+offset) < lastDifference*(distance+offset)) break;
+				root = p;
+				lastDifference = difference;
+				lastDistance = distance;
+			}
 		}
 		let delta = cutNode - a[root] - 1;
 		let badPart = a.slice(root);
