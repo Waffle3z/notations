@@ -73,7 +73,7 @@ class notation {
 	
 			for (let i = 1; i <= n; i++) {
 				parents.at(-1).push(badPart.map(v => v + increment));
-				increment += badPart.at(-1) + badPartHeight * i + delta;
+				increment += badPart.at(-1) + badPartHeight * (i+1) + delta-1;
 			}
 		}
 		return copy;
