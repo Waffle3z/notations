@@ -41,6 +41,7 @@ class notation {
 			parents.pop();
 			parents.at(-1).pop();
 		}
+		if (n == 0) return copy;
 
 		let a = flatten(tree);
 		function parent(ind) {
@@ -64,16 +65,18 @@ class notation {
 				parents.at(-1).push(badPart.map(v => v + increment*i));
 			}
 		} else {
-			let badPartHeight = 1;
-			let bottom = badPart.length - 1;
-			while (bottom > 0) {
-				bottom = badPart.findLastIndex((v, i) => i < bottom && v < badPart[bottom]);
-				badPartHeight++;
-			}
-	
-			for (let i = 1; i <= n; i++) {
-				parents.at(-1).push(badPart.map(v => v + increment));
-				increment += badPart.at(-1) + badPartHeight * (i+1) + delta-1;
+			parents.at(-1).push(badPart.map(v => v + increment));
+			for (let i = 2; i <= n; i++) {
+				let array = flatten(parents);
+				let ancestors = [array.length - 1];
+				while (true) {
+					let last = ancestors.at(-1);
+					let p = array.findLastIndex((x, j) => j < last && x < array[last]);
+					if (p == -1) break;
+					ancestors.push(p);
+				}
+				let offset = array[array.length - 1] + ancestors.length + (delta - 1);
+				parents.at(-1).push(badPart.map(v => v + offset));
 			}
 		}
 		return copy;
