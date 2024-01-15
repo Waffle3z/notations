@@ -1,5 +1,7 @@
 class notation {
 	static title = "Eulerian Sequence";
+	static header = "Eulerian Sequence (WIP)";
+	static footer = "<a href='mountain.html'>Mountain Viewer</a>";
 
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
@@ -31,22 +33,34 @@ class notation {
 	}
 };
 
-function arrayToRow(array) {
+function arrayToRow(array, mode) {
+	function parent(i) {
+		return array.findLastIndex((x, j) => j < i && x < array[i]);
+	}
 	return array.map((v, i) => {
-		let parentIndex = array.findLastIndex((x, j) => j < i && x < v);
-		let diff = parentIndex == -1 ? 0 : v - array[parentIndex];
-		let ancestry = [i];
-		while (true) {
-			let lastIndex = ancestry.at(-1);
-			let ancestor = array.findLastIndex((x, j) => j < lastIndex && x < array[lastIndex]);
-			if (ancestor == -1) break;
-			ancestry.push(ancestor);
+		let p = parent(i);
+		if (p == -1) {
+			return {
+				value: v,
+				position: i,
+				parentIndex: -1,
+				delta: 0
+			};
 		}
+		let ancestors = [p];
+		while (true) {
+			let ancestor = parent(ancestors.at(-1));
+			if (ancestor == -1) break;
+			ancestors.push(ancestor);
+		}
+		let diff = v - array[ancestors[0]];
+		let delta = diff - ancestors.length;
+		let parentIndex = ancestors[0];
 		return {
 			value: v,
 			position: i,
 			parentIndex: parentIndex,
-			delta: Math.max(0, diff - (ancestry.length-1))
+			delta: Math.max(delta, 0)
 		};
 	});
 }
@@ -57,10 +71,10 @@ function calcMountain(row) {
 		let newRow = [];
 		for (let i = 0; i < row.length; i++) {
 			if (row[i].parentIndex != -1) {
-    			let ancestry = [i];
-    			while (row[ancestry.at(-1)].parentIndex != -1) {
-    				ancestry.push(row[ancestry.at(-1)].parentIndex);
-    			}
+				let ancestry = [i];
+				while (row[ancestry.at(-1)].parentIndex != -1) {
+					ancestry.push(row[ancestry.at(-1)].parentIndex);
+				}
 				newRow.push({
 					value: row[i].delta,
 					position: row[i].position,
@@ -78,27 +92,33 @@ function calcMountain(row) {
 				if (j < 0 || (j < newRow.length-1 && newRow[j].position + 1 != newRow[j+1].position)) break;
 				if (newRow[j].value < newRow[i].value) {
 					newRow[i].parentIndex = j;
-        		    let ancestry = [i];
-        		    while (newRow[ancestry.at(-1)].parentIndex != -1) {
-        		        ancestry.push(newRow[ancestry.at(-1)].parentIndex);
-        		    }
-        		    let diff = newRow[i].value - newRow[j].value;
-        		    newRow[i].delta = Math.max(0, diff - (ancestry.length-1));
+					let ancestors = [j];
+					while (true) {
+						let ancestor = newRow[ancestors.at(-1)].parentIndex;
+						if (ancestor == -1) break;
+						ancestors.push(ancestor);
+					}
+					let diff = newRow[i].value - newRow[j].value;
+					let delta = diff - ancestors.length;
+					newRow[i].parentIndex = ancestors[0];
+					newRow[i].delta = Math.max(0, delta);
 					break;
 				}
 			}
 		}
+		if (newRow.length == 0) break;
 		mountain.push(newRow);
-    	let hasNextRow = false;
-    	for (let i = 0; i < row.length; i++) {
-    	    if (row[i].delta != 0) {
-    	        hasNextRow = true;
-    	        break;
-    	    }
-    	}
-    	if (!hasNextRow) return mountain;
+		let hasNextRow = false;
+		for (let i = 0; i < row.length; i++) {
+			if (row[i].delta > 0) {
+				hasNextRow = true;
+				break;
+			}
+		}
+		if (!hasNextRow) break;
 		row = newRow;
 	}
+	return mountain;
 }
 
 function cloneMountain(mountain) {
@@ -125,44 +145,6 @@ function expand(mountain, n) {
 		let badRootHeight = cutHeight - 1;
 		let badRootRow = mountain[badRootHeight];
 		let badRootSeam = badRootRow[badRootRow.at(-1).parentIndex].position;
-
-		if (mountain[badRootHeight+1].at(-1).value == 0 && badRootRow.at(-1).value != 1) { // expand like Triangular Sequence System
-			let ancestry = [badRootRow.length-1];
-			while (badRootRow[ancestry.at(-1)].parentIndex != -1) {
-				ancestry.push(badRootRow[ancestry.at(-1)].parentIndex);
-			}
-			let cutNode = badRootRow[ancestry[0]].value;
-			let root = ancestry[cutNode - badRootRow[ancestry[1]].value];
-			let increment = cutNode - badRootRow[root].value - 1;
-			let badPart = badRootRow.slice(root, -1);
-			for (let i = 1; i <= n; i++) {
-				result[badRootHeight].push(...badPart.map(v => {
-					return {
-						value: v.value + increment*i,
-						position: v.position + badPart.length*i,
-						parentIndex: v.parentIndex + badPart.length*i,
-					};
-				}));
-			}
-			for (let k = badRootHeight - 1; k >= 0; k--) {
-				let parent = mountain[k].at(-1).parentIndex;
-				for (let i = result[k].length; i < result[badRootHeight].length; i++) {
-					let numAncestors = 1;
-					let current = parent;
-					while (result[k][current].parentIndex != -1) {
-						current = result[k][current].parentIndex;
-						numAncestors++;
-					}
-					result[k].push({
-						value: result[k][parent].value + result[k+1][i-1].value + numAncestors,
-						position: result[k][i-1].position + 1,
-						parentIndex: parent
-					});
-					parent = i;
-				}
-			}
-			return result;
-		}
 
 		for (let i = 1; i <= n; i++) {
 			for (let j = badRootSeam; j < cutLength; j++) {
@@ -226,8 +208,8 @@ function expand(mountain, n) {
 			let numAncestors = 0;
 			let current = j;
 			while (result[i][current].parentIndex != -1) {
-			    current = result[i][current].parentIndex;
-			    numAncestors++;
+				current = result[i][current].parentIndex;
+				numAncestors++;
 			}
 			result[i][j].value = result[i][result[i][j].parentIndex].value + result[i+1][k].value + numAncestors;
 		}

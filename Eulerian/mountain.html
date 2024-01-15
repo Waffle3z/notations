@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv='cache-control' content='no-cache'> 
+	<meta http-equiv='expires' content='0'> 
+	<meta http-equiv='pragma' content='no-cache'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../styles.css">
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<title>Eulerian Mountain Viewer</title>
+</head>
+<body>
+	<h2>Eulerian Mountain Viewer</h2>
+	<div style="display: flex">
+		<label for="sequenceInput">Sequence:</label>
+		<input type="text" id="sequenceInput" oninput="draw()">
+	</div>
+	<div style="display: flex">
+		<label for="expand"><button id="expandButton" onclick="onexpand()">Expand</button></label>
+		<input type="text" id="expandInput" value="3" style="width:20px; text-align:center; margin-right: 5px" oninput="draw()">
+	</div>
+	<br>
+	<div style="display: flex">
+		<label for="textHeight">Text Height:</label>
+		<input type="range" id="textHeight" min="12" max="64" value="20" oninput="draw()">
+		<label for="lineSpacing">Line Spacing:</label>
+		<input type="range" id="lineSpacing" min="0" max="20" value="4" oninput="draw()">
+	</div>
+	<div style="display: flex">
+		<label for="rowWidth">Row Width:</label>
+		<input type="range" id="rowWidth" min="0" max="200" value="20" oninput="draw()">
+		<label for="rowHeight">Row Height:</label>
+		<input type="range" id="rowHeight" min="0" max="200" value="20" oninput="draw()">
+	</div>
+	<br>
+	<canvas id="canvas" style="border:2px solid #aaa;"></canvas>
+	<br>
+	<canvas id="canvas2" style="border:2px solid #aaa;"></canvas>
+
+	<script src="notation.js"></script>
+	<script>
+		const PADDING = 10;
+
+		let canvas = document.getElementById("canvas");
+		let canvas2 = document.getElementById("canvas2");
+
+		let textInput = document.getElementById("sequenceInput");
+		let rowWidthInput = document.getElementById("rowWidth");
+		let rowHeightInput = document.getElementById("rowHeight");
+		let textHeightInput = document.getElementById("textHeight");
+		let lineSpacingInput = document.getElementById("lineSpacing");
+		let expandInput = document.getElementById("expandInput");
+		textInput.value = "0,1,4,11,26,57,120";
+		draw();
+
+		function getMountain() {
+			let inputText = textInput.value;
+			if (inputText.length == 0) inputText = "0";
+			let sequence = JSON.parse("["+inputText.match(/[0-9,]*[0-9]/)+"]");
+			let mountain = calcMountain(arrayToRow(sequence));
+			if (mountain.at(-1).length == 0) mountain.pop();
+			return mountain;
+		}
+
+		function onexpand() {
+			let mountain = getMountain();
+			let n = parseInt(expandInput.value) || 0;
+			let array = expand(mountain, n)[0].map(v => v.value).slice(0,30);
+			textInput.value = array.join(",");
+			draw();
+		}
+
+		function draw() {
+			let mountain = getMountain();
+			drawMountain(canvas, mountain);
+			let n = parseInt(expandInput.value) || 0;
+			let expanded = expand(mountain, n);
+			drawMountain(canvas2, expand(mountain, n));
+		}
+
+		function drawMountain(canvas, mountain) {
+			let ctx = canvas.getContext("2d");
+			let rowWidth = parseInt(rowWidthInput.value);
+			let rowHeight = parseInt(rowHeightInput.value);
+			let textHeight = parseInt(textHeightInput.value);
+			let lineSpace = parseInt(lineSpacingInput.value);
+			rowWidthInput.previousElementSibling.innerText = `Row Width: ${rowWidth}`;
+			rowHeightInput.previousElementSibling.innerText = `Row Height: ${rowHeight}`;
+			textHeightInput.previousElementSibling.innerText = `Text Height: ${textHeight}`;
+			lineSpacingInput.previousElementSibling.innerText = `Line Spacing: ${lineSpace}`;
+
+			function clear() {
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				ctx.font = `${textHeight}px Consolas`;
+			}
+			clear();
+
+			if (mountain.length == 0) {
+				canvas.style.display = "none";
+				return;
+			} else {
+				canvas.style.removeProperty("display");
+			}
+
+			function drawLine(x0, y0, x1, y1) {
+				ctx.beginPath();
+				ctx.moveTo(x0, y0);
+				ctx.lineTo(x1, y1);
+				ctx.strokeStyle = "#222";
+				ctx.lineWidth = 5;
+				ctx.stroke();
+				ctx.strokeStyle = "white";
+				ctx.lineWidth = 2;
+				ctx.stroke();
+			}
+
+			let width0 = ctx.measureText(mountain[0][0].value).width;
+			let width1 = ctx.measureText(mountain[0].at(-1).value).width;
+
+			let maxWidth = 0;
+			let maxHeight = 0;
+			for (let i = 0; i < mountain.length; i++) {
+				for (let j = 0; j < mountain[i].length; j++) {
+					let measure = ctx.measureText(mountain[i][j].value);
+					maxWidth = Math.max(maxWidth, measure.width);
+					maxHeight = Math.max(maxHeight, measure.actualBoundingBoxAscent);
+				}
+			}
+			rowWidth += maxWidth;
+			rowHeight += maxHeight + lineSpace*2;
+
+			canvas.setAttribute("width", (mountain[0].length - 1)*rowWidth + width0/2 + width1/2 + PADDING*2);
+			canvas.setAttribute("height", (mountain.length - 1)*rowHeight + maxHeight + PADDING*2);
+			clear();
+
+			function getPosition(i, j) {
+				return [(mountain[i][j].position)*rowWidth + width0/2 + PADDING, (mountain.length-i-1)*rowHeight + maxHeight + PADDING];
+			}
+
+			for (let i = 1; i < mountain.length; i++) {
+				for (let j = 0; j < mountain[i].length; j++) {
+					let [x, y] = getPosition(i, j);
+					drawLine(x, y + lineSpace, x, y + rowHeight - maxHeight - lineSpace);
+				}
+			}
+			for (let i = 0; i < mountain.length; i++) {
+				for (let j = 0; j < mountain[i].length; j++) {
+					let parentIndex = mountain[i][j].parentIndex;
+					if (parentIndex != -1) {
+						let [x, y] = getPosition(i, j);
+						let upperMeasure = ctx.measureText(mountain[i+1].find(v => v.position == mountain[i][j].position).value);
+						let parentMeasure = ctx.measureText(mountain[i][parentIndex].value);
+						let y0 = y - rowHeight - upperMeasure.actualBoundingBoxAscent / 2, y1 = y - parentMeasure.actualBoundingBoxAscent / 2;
+						let x0 = x, x1 = x - (j - parentIndex) * rowWidth;
+						let dy = (y1 - y0), dx = (x1 - x0);
+						let magnitude = Math.sqrt(dy*dy + dx*dx);
+						let uy = dy/magnitude, ux = dx/magnitude;
+						let space0 = lineSpace + upperMeasure.width / 2;
+						let space1 = lineSpace + parentMeasure.width / 2;
+						drawLine(x0 + ux*space0, y0 + uy*space0, x1 - ux*space1, y1 - uy*space1);
+					}
+				}
+			}
+			for (let i = 0; i < mountain.length; i++) {
+				for (let j = 0; j < mountain[i].length; j++) {
+					let text = mountain[i][j].value;
+					let [x, y] = getPosition(i, j);
+					let measure = ctx.measureText(text);
+					ctx.strokeStyle = "#222";
+					ctx.fillStyle = "white";
+					ctx.lineWidth = 3;
+					ctx.strokeText(text, x - measure.width / 2, y);
+					ctx.fillText(text, x - measure.width / 2, y);
+				}
+			}
+		}
+	</script>
+
+	<div id="footer">
+		<a href="../Eulerian">Explorer</a> | 
+		<a href="../">Index</a>
+	</div>
+</body>
+</html>
