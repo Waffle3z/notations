@@ -60,9 +60,13 @@ function arrayToRow(array, mode) {
 			value: v,
 			position: i,
 			parentIndex: parentIndex,
-			delta: Math.max(delta, 0)
+			delta: delta
 		};
 	});
+}
+
+function clampedValue(term) {
+	return Math.max(0, term.value);
 }
 
 function calcMountain(row) {
@@ -90,7 +94,7 @@ function calcMountain(row) {
 				if (p < 0) break;
 				let j = newRow.findIndex(x => x.position >= row[p].position);
 				if (j < 0 || (j < newRow.length-1 && newRow[j].position + 1 != newRow[j+1].position)) break;
-				if (newRow[j].value < newRow[i].value) {
+				if (clampedValue(newRow[j]) < clampedValue(newRow[i])) {
 					newRow[i].parentIndex = j;
 					let ancestors = [j];
 					while (true) {
@@ -98,10 +102,10 @@ function calcMountain(row) {
 						if (ancestor == -1) break;
 						ancestors.push(ancestor);
 					}
-					let diff = newRow[i].value - newRow[j].value;
+					let diff = clampedValue(newRow[i]) - clampedValue(newRow[j]);
 					let delta = diff - ancestors.length;
 					newRow[i].parentIndex = ancestors[0];
-					newRow[i].delta = Math.max(0, delta);
+					newRow[i].delta = delta;
 					break;
 				}
 			}
@@ -146,6 +150,49 @@ function expand(mountain, n) {
 		let badRootRow = mountain[badRootHeight];
 		let badRootSeam = badRootRow[badRootRow.at(-1).parentIndex].position;
 
+		let hasNegative = false;
+		for (let i = 0; i < mountain.length; i++) {
+			if (mountain[i].find(x => x.value < 0)) {
+				hasNegative = true;
+				break;
+			}
+		}
+		if (hasNegative || (mountain[cutHeight].at(-1).value == 0 && badRootRow.at(-1).value > 1)) { // expand like LPrSS
+			let cutNode = badRootRow.at(-1).value;
+			let root = badRootRow.at(-1).parentIndex;
+			let increment = cutNode - badRootRow[root].value - 1;
+			let badPart = badRootRow.slice(root, -1);
+			for (let i = 1; i <= n; i++) {
+				result[badRootHeight].push(...badPart.map(v => {
+					let value = v.value + increment*i;
+					return {
+						value: value,
+						position: v.position + badPart.length*i,
+						parentIndex: v.parentIndex + badPart.length*i,
+					};
+				}));
+			}
+			for (let k = badRootHeight - 1; k >= 0; k--) {
+				let parent = mountain[k].at(-1).parentIndex;
+				for (let i = result[k].length; i <= result[k+1].length; i++) {
+					let numAncestors = 1;
+					let current = parent;
+					while (result[k][current].parentIndex != -1) {
+						current = result[k][current].parentIndex;
+						numAncestors++;
+					}
+					let value = result[k][parent].value + result[k+1][i-1].value + numAncestors;
+					result[k].push({
+						value: value,
+						position: result[k][i-1].position + 1,
+						parentIndex: parent
+					});
+					parent = i;
+				}
+			}
+			return calcMountain(arrayToRow(result[0].map(v => v.value)));
+		}
+
 		for (let i = 1; i <= n; i++) {
 			for (let j = badRootSeam; j < cutLength; j++) {
 				let isAscending = false;
@@ -187,8 +234,9 @@ function expand(mountain, n) {
 						}
 					}
 					let parentIndex = result[k].findIndex(x => x.position == parentPosition);
+					let value = parentIndex == -1 ? 0 : NaN;
 					result[k].push({
-						value: parentIndex == -1 ? 0 : NaN,
+						value: value,
 						position: j + (cutLength-badRootSeam)*i,
 						parentIndex: parentIndex
 					});

@@ -54,6 +54,12 @@
 		textInput.value = "0,1,4,11,26,57,120";
 		draw();
 
+		expandInput.addEventListener("keyup", ({key}) => {
+			if (key == "Enter") {
+				onexpand();
+			}
+		});
+
 		function getMountain() {
 			let inputText = textInput.value;
 			if (inputText.length == 0) inputText = "0";
@@ -66,7 +72,7 @@
 		function onexpand() {
 			let mountain = getMountain();
 			let n = parseInt(expandInput.value) || 0;
-			let array = expand(mountain, n)[0].map(v => v.value).slice(0,30);
+			let array = expand(mountain, n)[0].map(v => v.value).slice(0,1000);
 			textInput.value = array.join(",");
 			draw();
 		}
