@@ -150,7 +150,16 @@ function expand(mountain, n) {
 		let badRootRow = mountain[badRootHeight];
 		let badRootSeam = badRootRow[badRootRow.at(-1).parentIndex].position;
 
-		if (mountain[cutHeight].at(-1).value < 0 || (mountain[cutHeight].at(-1).value == 0 && badRootRow.at(-1).value > 1)) {
+		let worm = false;
+		if (mountain[cutHeight].at(-1).value == 0 && badRootRow.at(-1).value > 1) {
+			worm = true
+		} else if (mountain[cutHeight].at(-1).value < 0) {
+			let nextRow = mountain[cutHeight-1];
+			if (nextRow.at(-1).value != nextRow[nextRow.at(-1).parentIndex].value + 1) {
+				worm = true;
+			}
+		}
+		if (worm) {
 			let cutNode = badRootRow.at(-1).value;
 			let parentIndex = badRootRow.at(-1).parentIndex;
 			while (parentIndex != -1 && badRootRow[parentIndex].value >= cutNode - 1) {
