@@ -150,27 +150,18 @@ function expand(mountain, n) {
 		let badRootRow = mountain[badRootHeight];
 		let badRootSeam = badRootRow[badRootRow.at(-1).parentIndex].position;
 
-		let hasNegative = false;
-		for (let i = 0; i < mountain.length; i++) {
-			if (mountain[i].find(x => x.value < 0)) {
-				hasNegative = true;
-				break;
-			}
-		}
-		if (hasNegative || (mountain[cutHeight].at(-1).value == 0 && badRootRow.at(-1).value > 1)) { // expand like LPrSS
+		if (mountain[cutHeight].at(-1).value < 0 || (mountain[cutHeight].at(-1).value == 0 && badRootRow.at(-1).value > 1)) {
 			let cutNode = badRootRow.at(-1).value;
-			let root = badRootRow.at(-1).parentIndex;
-			let increment = cutNode - badRootRow[root].value - 1;
-			let badPart = badRootRow.slice(root, -1);
+			let parentIndex = badRootRow.at(-1).parentIndex;
+			while (parentIndex != -1 && badRootRow[parentIndex].value >= cutNode - 1) {
+				parentIndex = badRootRow[parentIndex].parentIndex;
+			}
 			for (let i = 1; i <= n; i++) {
-				result[badRootHeight].push(...badPart.map(v => {
-					let value = v.value + increment*i;
-					return {
-						value: value,
-						position: v.position + badPart.length*i,
-						parentIndex: v.parentIndex + badPart.length*i,
-					};
-				}));
+				result[badRootHeight].push({
+					value: cutNode - 1,
+					position: badRootRow.at(-1).position + i - 1,
+					parentIndex: parentIndex
+				});
 			}
 			for (let k = badRootHeight - 1; k >= 0; k--) {
 				let parent = mountain[k].at(-1).parentIndex;
@@ -234,7 +225,8 @@ function expand(mountain, n) {
 						}
 					}
 					let parentIndex = result[k].findIndex(x => x.position == parentPosition);
-					let value = parentIndex == -1 ? 0 : NaN;
+					let base = mountain[k].find(x => x.position == j);
+					let value = parentIndex == -1 ? base ? base.value : 0 : NaN;
 					result[k].push({
 						value: value,
 						position: j + (cutLength-badRootSeam)*i,
