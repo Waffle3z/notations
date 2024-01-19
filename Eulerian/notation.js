@@ -136,6 +136,17 @@ function cloneMountain(mountain) {
 	}));
 }
 
+function countAncestors(row, index) {
+	let current = index == -1 ? row.length - 1 : index;
+	let count = 0;
+	while (true) {
+		current = row[current].parentIndex;
+		if (current == -1) break;
+		count++;
+	}
+	return count;
+}
+
 function expand(mountain, n) {
 	let result = cloneMountain(mountain);
 	if (mountain[0].at(-1).parentIndex == -1) {
@@ -152,7 +163,7 @@ function expand(mountain, n) {
 
 		let worm = false;
 		if (mountain[cutHeight].at(-1).value == 0 && badRootRow.at(-1).value > 1) {
-			worm = true
+			worm = true	
 		} else if (mountain[cutHeight].at(-1).value < 0) {
 			let nextRow = mountain[cutHeight-1];
 			if (nextRow.at(-1).value != nextRow[nextRow.at(-1).parentIndex].value + 1) {
@@ -165,25 +176,33 @@ function expand(mountain, n) {
 			while (parentIndex != -1 && badRootRow[parentIndex].value >= cutNode - 1) {
 				parentIndex = badRootRow[parentIndex].parentIndex;
 			}
+			let row = result[badRootHeight];
+			let diff = cutNode - 1 - badRootRow[parentIndex].value;
+			let badPart = row.slice(parentIndex);
 			for (let i = 1; i <= n; i++) {
-				result[badRootHeight].push({
-					value: cutNode - 1,
-					position: badRootRow.at(-1).position + i - 1,
-					parentIndex: parentIndex
+				row.push({
+					value: cutNode - 1 + diff * (i-1),
+					position: badRootRow.at(-1).position + (i - 1) * badPart.length,
+					parentIndex: parentIndex + badPart.length * (i - 1)
 				});
+				for (let j = 1; j < badPart.length; j++) {
+					let parent = badPart[j].parentIndex + badPart.length * i;
+					let delta = mountain[badRootHeight + 1].find(v => v.position == badPart[j].position).value;
+					let numAncestors = 1 + countAncestors(row, parent);
+					row.push({
+						value: row[parent].value + delta + numAncestors,
+						position: badPart[j].position + i * badPart.length,
+						parentIndex: parent
+					});
+				}
 			}
 			for (let k = badRootHeight - 1; k >= 0; k--) {
 				let parent = mountain[k].at(-1).parentIndex;
 				for (let i = result[k].length; i <= result[k+1].length; i++) {
-					let numAncestors = 1;
-					let current = parent;
-					while (result[k][current].parentIndex != -1) {
-						current = result[k][current].parentIndex;
-						numAncestors++;
-					}
-					let value = result[k][parent].value + result[k+1][i-1].value + numAncestors;
+					let delta = result[k+1].find(v => v.position == result[k][i].position).value;
+					let numAncestors = 1 + countAncestors(result[k], parent);
 					result[k].push({
-						value: value,
+						value: result[k][parent].value + delta + numAncestors,
 						position: result[k][i-1].position + 1,
 						parentIndex: parent
 					});
@@ -254,13 +273,9 @@ function expand(mountain, n) {
 		for (let j = 0; j < result[i].length; j++) {
 			if (!isNaN(result[i][j].value)) continue;
 			let k = result[i+1].findIndex(x => x.position >= result[i][j].position);
-			let numAncestors = 0;
-			let current = j;
-			while (result[i][current].parentIndex != -1) {
-				current = result[i][current].parentIndex;
-				numAncestors++;
-			}
-			result[i][j].value = result[i][result[i][j].parentIndex].value + result[i+1][k].value + numAncestors;
+			let delta = result[i+1][k].value;
+			let numAncestors = countAncestors(result[i], j);
+			result[i][j].value = result[i][result[i][j].parentIndex].value + delta + numAncestors;
 		}
 	}
 	return result;
