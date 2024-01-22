@@ -154,7 +154,7 @@ function expand(mountain, n) {
 	} else {
 		let cutHeight = mountain.findLastIndex(row => row.at(-1).position == mountain[0].length - 1);
 		for (let i = 0; i <= cutHeight; i++) result[i].pop();
-		if (!result.at(-1).length) result.pop();
+		if (result.at(-1).length == 0) result.pop();
 		let cutLength = result[0].length;
 
 		let badRootHeight = cutHeight - 1;
@@ -163,7 +163,7 @@ function expand(mountain, n) {
 
 		let worm = false;
 		if (mountain[cutHeight].at(-1).value == 0 && badRootRow.at(-1).value > 1) {
-			worm = true	
+			worm = true;
 		} else if (mountain[cutHeight].at(-1).value < 0) {
 			let nextRow = mountain[cutHeight-1];
 			if (nextRow.at(-1).value != nextRow[nextRow.at(-1).parentIndex].value + 1) {
@@ -178,23 +178,12 @@ function expand(mountain, n) {
 			}
 			let row = result[badRootHeight];
 			let diff = cutNode - 1 - badRootRow[parentIndex].value;
-			let badPart = row.slice(parentIndex);
 			for (let i = 1; i <= n; i++) {
 				row.push({
 					value: cutNode - 1 + diff * (i-1),
-					position: badRootRow.at(-1).position + (i - 1) * badPart.length,
-					parentIndex: parentIndex + badPart.length * (i - 1)
+					position: badRootRow.at(-1).position + i - 1,
+					parentIndex: parentIndex + i - 1
 				});
-				for (let j = 1; j < badPart.length; j++) {
-					let parent = badPart[j].parentIndex + badPart.length * i;
-					let delta = mountain[badRootHeight + 1].find(v => v.position == badPart[j].position).value;
-					let numAncestors = 1 + countAncestors(row, parent);
-					row.push({
-						value: row[parent].value + delta + numAncestors,
-						position: badPart[j].position + i * badPart.length,
-						parentIndex: parent
-					});
-				}
 			}
 			for (let k = badRootHeight - 1; k >= 0; k--) {
 				let parent = mountain[k].at(-1).parentIndex;
@@ -212,71 +201,54 @@ function expand(mountain, n) {
 			return calcMountain(arrayToRow(result[0].map(v => v.value)));
 		}
 
+		let isAscending = false;
+		let p = badRootRow.findIndex(x => x.position == badRootSeam);
+		while (badRootRow[p] && badRootRow[p].position >= badRootSeam) {
+			if (badRootRow[p].position == badRootSeam) {
+				isAscending = true;
+				break;
+			}
+			p = badRootRow[p].parentIndex;
+		}
+
 		for (let i = 1; i <= n; i++) {
 			for (let j = badRootSeam; j < cutLength; j++) {
-				let isAscending = false;
-				let p = badRootRow.findIndex(x => x.position >= j);
-				if (badRootRow[p].position == j) {
-					while (true) {
-						if (!badRootRow[p] || badRootRow[p].position < badRootSeam) {
-							isAscending = false;
-							break;
-						}
-						if (badRootRow[p].position == badRootSeam) {
-							isAscending = true;
-							break;
-						}
-						p = badRootRow[p].parentIndex;
-					}
-				}
-
-				let seamHeight = 1 + result.findLastIndex(v => {
-					let x = v.find(x => x.position >= j);
-					return x && x.position == j;
-				});
+				let seamHeight = result.findLastIndex(v => v.find(x => x.position == j));
 				let isReplacingCut = j == badRootSeam;
-				for (let k = 0; k < seamHeight; k++) {
-					if (!result[k]) result.push([]);
-					let sx = mountain[k].length - 1;
-					if (!isReplacingCut || (isAscending && k >= badRootHeight)) {
-						sx = mountain[k].findIndex(x => x.position >= j);
+				for (let k = seamHeight; k >= 0; k--) {
+					let sourceParentIndex;
+					if (isReplacingCut && (!isAscending || k < badRootHeight)) {
+						sourceParentIndex = mountain[k].at(-1).parentIndex;
+					} else {
+						sourceParentIndex = mountain[k].find(x => x.position >= j).parentIndex;
 					}
-					let sourceParentIndex = mountain[k][sx].parentIndex;
 					let parentShifts = i - isReplacingCut;
 					let parentPosition = -1;
 					if (mountain[k][sourceParentIndex]) {
-						let pos = mountain[k][sourceParentIndex].position;
-						if (pos >= badRootSeam) {
-							parentPosition = pos + parentShifts*(cutLength-badRootSeam);
-						} else {
-							parentPosition = pos;
+						parentPosition = mountain[k][sourceParentIndex].position;
+						if (parentPosition >= badRootSeam) {
+							parentPosition += parentShifts*(cutLength-badRootSeam);
 						}
 					}
 					let parentIndex = result[k].findIndex(x => x.position == parentPosition);
+					let position = j + (cutLength-badRootSeam)*i;
 					let base = mountain[k].find(x => x.position == j);
-					let value = parentIndex == -1 ? base ? base.value : 0 : NaN;
+					let value = base ? base.value : 0;
+					if (parentIndex != -1) {
+						let delta = result[k+1].find(x => x.position >= position).value;
+						let numAncestors = countAncestors(result[k], parentIndex) + 1;
+						value = result[k][parentIndex].value + delta + numAncestors;
+					}
 					result[k].push({
 						value: value,
-						position: j + (cutLength-badRootSeam)*i,
+						position: position,
 						parentIndex: parentIndex
 					});
 				}
 			}
 		}
 	}
-	
-	for (let i = result.length-1; i >= 0; i--) {
-		if (!result[i].length) {
-			result.pop();
-			continue;
-		}
-		for (let j = 0; j < result[i].length; j++) {
-			if (!isNaN(result[i][j].value)) continue;
-			let k = result[i+1].findIndex(x => x.position >= result[i][j].position);
-			let delta = result[i+1][k].value;
-			let numAncestors = countAncestors(result[i], j);
-			result[i][j].value = result[i][result[i][j].parentIndex].value + delta + numAncestors;
-		}
-	}
+	while (result.length > 0 && result.at(-1).length == 0) result.pop();
+
 	return result;
 }
