@@ -31,18 +31,22 @@ function drawMountain(canvas, config, mountain) {
 		ctx.stroke();
 	}
 
-	let width0 = ctx.measureText(mountain[0][0].value).width;
-	let width1 = ctx.measureText(mountain[0].at(-1).value).width;
+	function getText(term) {
+		return term.textOverride != null ? term.textOverride : term.value.toString();
+	}
+
+	let width0 = ctx.measureText(getText(mountain[0][0])).width;
+	let width1 = ctx.measureText(getText(mountain[0].at(-1))).width;
 
 	let maxWidth = ctx.measureText("-1").width;
 	let maxHeight = 0;
-	for (let i = 0; i < mountain.length; i++) {
-		for (let j = 0; j < mountain[i].length; j++) {
-			let measure = ctx.measureText(mountain[i][j].value);
+	mountain.forEach(row => {
+		row.forEach(term => {
+			let measure = ctx.measureText(getText(term));
 			maxWidth = Math.max(maxWidth, measure.width);
 			maxHeight = Math.max(maxHeight, measure.actualBoundingBoxAscent);
-		}
-	}
+		});
+	});
 	rowWidth += maxWidth;
 	rowHeight += maxHeight + lineSpace*2;
 
@@ -54,19 +58,21 @@ function drawMountain(canvas, config, mountain) {
 		return [(mountain[i][j].position)*rowWidth + width0/2 + PADDING, (mountain.length-i-1)*rowHeight + maxHeight + PADDING];
 	}
 
-	for (let i = 1; i < mountain.length; i++) {
-		for (let j = 0; j < mountain[i].length; j++) {
-			let [x, y] = getPosition(i, j);
-			drawLine(x, y + lineSpace, x, y + rowHeight - maxHeight - lineSpace);
+	if (!config.hideVertical) {
+		for (let i = 1; i < mountain.length; i++) {
+			mountain[i].forEach((_, j) => {
+				let [x, y] = getPosition(i, j);
+				drawLine(x, y + lineSpace, x, y + rowHeight - maxHeight - lineSpace);
+			});
 		}
 	}
-	for (let i = 0; i < mountain.length; i++) {
-		for (let j = 0; j < mountain[i].length; j++) {
-			let parentIndex = mountain[i][j].parentIndex;
+	mountain.forEach((row, i) => {
+		row.forEach((term, j) => {
+			let parentIndex = term.parentOverride != null ? term.parentOverride : term.parentIndex;
 			if (parentIndex != -1) {
 				let [x, y] = getPosition(i, j);
-				let upperMeasure = ctx.measureText(mountain[i+1].find(v => v.position == mountain[i][j].position).value);
-				let parentMeasure = ctx.measureText(mountain[i][parentIndex].value);
+				let upperMeasure = ctx.measureText(getText(mountain[i+1].find(v => v.position == term.position)));
+				let parentMeasure = ctx.measureText(getText(row[parentIndex]));
 				let y0 = y - rowHeight - upperMeasure.actualBoundingBoxAscent / 2, y1 = y - parentMeasure.actualBoundingBoxAscent / 2;
 				let x0 = x, x1 = x - (j - parentIndex) * rowWidth;
 				let dy = (y1 - y0), dx = (x1 - x0);
@@ -76,19 +82,18 @@ function drawMountain(canvas, config, mountain) {
 				let space1 = lineSpace + parentMeasure.width / 2;
 				drawLine(x0 + ux*space0, y0 + uy*space0, x1 - ux*space1, y1 - uy*space1);
 			}
-		}
-	}
-	for (let i = 0; i < mountain.length; i++) {
-		for (let j = 0; j < mountain[i].length; j++) {
-			let value = mountain[i][j].value;
-			let text = value.toString();
+		});
+	});
+	mountain.forEach((row, i) => {
+		row.forEach((term, j) => {
+			let text = getText(term);
 			let [x, y] = getPosition(i, j);
 			let measure = ctx.measureText(text);
 			ctx.strokeStyle = "#222";
-			ctx.fillStyle = "white";
+			ctx.fillStyle = term.colorOverride != null ? term.colorOverride : "white";
 			ctx.lineWidth = 3;
 			ctx.strokeText(text, x - measure.width / 2, y);
 			ctx.fillText(text, x - measure.width / 2, y);
-		}
-	}
+		});
+	});
 }

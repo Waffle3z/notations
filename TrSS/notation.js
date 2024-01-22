@@ -15,6 +15,7 @@ function flatten(x) {
 
 class notation {
 	static title = "Triangular Sequence System";
+	static footer = "<a href='viewer.html'>Row Viewer</a>";
 
 	static lessOrEqual(a, b) {
 		a = flatten(a);
@@ -39,6 +40,7 @@ class notation {
 		parents.at(-1).pop();
 		while (parents.at(-1).length == 0) {
 			parents.pop();
+			if (parents.length == 0) return [0];
 			parents.at(-1).pop();
 		}
 		if (n == 0) return copy;

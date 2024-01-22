@@ -7,11 +7,11 @@
 	<meta http-equiv='pragma' content='no-cache'>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" type="text/css" href="../styles.css">
-	<link rel="stylesheet" type="text/css" href="styles.css">
-	<title>Eulerian Mountain Viewer</title>
+	<link rel="stylesheet" type="text/css" href="../Eulerian/styles.css">
+	<title>TrSS Row Viewer</title>
 </head>
 <body>
-	<h2>Eulerian Mountain Viewer</h2>
+	<h2>TrSS Row Viewer</h2>
 	<div style="display: flex">
 		<label for="sequenceInput">Sequence:</label>
 		<input type="text" id="sequenceInput" oninput="draw()">
@@ -39,10 +39,11 @@
 	<canvas id="canvas2" style="border:2px solid #aaa;"></canvas>
 
 	<script src="notation.js"></script>
-	<script src="mountain.js"></script>
+	<script src="../Eulerian/mountain.js"></script>
 	<script>
 		let config = {
-			PADDING: 10
+			PADDING: 10,
+			hideVertical: true
 		};
 		
 		let canvas = document.getElementById("canvas");
@@ -54,7 +55,7 @@
 		let textHeightInput = document.getElementById("textHeight");
 		let lineSpacingInput = document.getElementById("lineSpacing");
 		let expandInput = document.getElementById("expandInput");
-		textInput.value = "0,1,4,11,26,57,120";
+		textInput.value = "0,1,3,5";
 		draw();
 
 		function updateConfig() {
@@ -74,35 +75,85 @@
 			}
 		});
 
-		function getMountain() {
+		function getSequence() {
 			let inputText = textInput.value;
 			if (inputText.length == 0) inputText = "0";
-			let sequence = JSON.parse("["+inputText.match(/[0-9,]*[0-9]/)+"]");
-			let mountain = calcMountain(arrayToRow(sequence));
-			if (mountain.at(-1).length == 0) mountain.pop();
-			return mountain;
+			return JSON.parse("["+inputText.match(/[0-9,]*[0-9]/)+"]");
+		}
+
+		function sequenceToRow(sequence) {
+			let row = sequence.map((v, i) => {
+				return {value: v, position: i, parentIndex: sequence.findLastIndex((x, j) => x < v && j < i)};
+			});
+			row.forEach((term, i) => {
+				if (term.parentIndex == -1) {
+					term.rootIndex = -1;
+				} else {
+					let root = i;
+					let diff = term.value - row[term.parentIndex].value;
+					for (let j = 0; j < diff; j++) {
+						root = row[root].parentIndex;
+						if (row[root].value == 0) break;
+					}
+					term.rootIndex = root;
+				}
+			});
+			return row;
+		}
+
+		function calcMountain(sequence) {
+			let row0 = sequenceToRow(sequence);
+			let row1 = [];
+			row0.forEach((term, i) => {
+				if (term.parentIndex == -1) return;
+				let numAncestors = 0;
+				let current = i;
+				while (true) {
+					current = row0[current].parentIndex;
+					if (current == -1) break;
+					numAncestors++;
+				}
+				let diff = term.value - row0[term.parentIndex].value;
+				row1.push({
+					value: diff - numAncestors,
+					diff: diff,
+					position: i,
+					parentIndex: -1
+				});
+			});
+			row0.forEach(term => {
+				term.parentOverride = term.rootIndex;
+			});
+			row1.forEach(term => {
+				if (term.value < 0) {
+					term.textOverride = term.diff,
+					term.colorOverride = "#2af";
+				}
+			});
+			return [row0, row1];
 		}
 
 		function onexpand() {
-			let mountain = getMountain();
+			let sequence = getSequence();
 			let n = parseInt(expandInput.value) || 0;
-			let array = expand(mountain, n)[0].map(v => v.value).slice(0,1000);
+			let array = notation.expand(sequence, n).slice(0,1000);
 			textInput.value = array.join(",");
 			draw();
 		}
 
 		function draw() {
 			updateConfig();
-			let mountain = getMountain();
+			let sequence = getSequence();
+			let mountain = calcMountain(sequence);
 			drawMountain(canvas, config, mountain);
 			let n = parseInt(expandInput.value) || 0;
-			let expanded = expand(mountain, n);
+			let expanded = calcMountain(flatten(notation.expand(sequence, n)));
 			drawMountain(canvas2, config, expanded);
 		}
 	</script>
 
 	<div id="footer">
-		<a href="../Eulerian">Explorer</a> | 
+		<a href="../TrSS">Explorer</a> | 
 		<a href="../">Index</a>
 	</div>
 </body>
