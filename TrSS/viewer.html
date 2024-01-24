@@ -37,6 +37,8 @@
 	<canvas id="canvas" style="border:2px solid #aaa;"></canvas>
 	<br>
 	<canvas id="canvas2" style="border:2px solid #aaa;"></canvas>
+	<h3 id="matrix"></h3>
+	<h3 id="matrix2"></h3>
 
 	<script src="notation.js"></script>
 	<script src="../Eulerian/mountain.js"></script>
@@ -86,6 +88,14 @@
 				return {value: v, position: i, parentIndex: sequence.findLastIndex((x, j) => x < v && j < i)};
 			});
 			row.forEach((term, i) => {
+				let numAncestors = 0;
+				let current = i;
+				while (true) {
+					current = row[current].parentIndex;
+					if (current == -1) break;
+					numAncestors++;
+				}
+				term.numAncestors = numAncestors;
 				if (term.parentIndex == -1) {
 					term.rootIndex = -1;
 				} else {
@@ -106,16 +116,9 @@
 			let row1 = [];
 			row0.forEach((term, i) => {
 				if (term.parentIndex == -1) return;
-				let numAncestors = 0;
-				let current = i;
-				while (true) {
-					current = row0[current].parentIndex;
-					if (current == -1) break;
-					numAncestors++;
-				}
 				let diff = term.value - row0[term.parentIndex].value;
 				row1.push({
-					value: diff - numAncestors,
+					value: diff - term.numAncestors,
 					diff: diff,
 					position: i,
 					parentIndex: -1
@@ -141,14 +144,24 @@
 			draw();
 		}
 
+		function toMatrixString(mountain) {
+			let matrix = mountain[0].map((v, i) => {
+				let diff = v.parentIndex == -1 ? v.value : v.value - mountain[0][v.parentIndex].value;
+				return [v.numAncestors, diff];
+			});
+			return matrix.map(v => `(${v[0]},${v[1]})`).join("");
+		}
+
 		function draw() {
 			updateConfig();
 			let sequence = getSequence();
 			let mountain = calcMountain(sequence);
 			drawMountain(canvas, config, mountain);
 			let n = parseInt(expandInput.value) || 0;
-			let expanded = calcMountain(flatten(notation.expand(sequence, n)));
-			drawMountain(canvas2, config, expanded);
+			let mountain2 = calcMountain(flatten(notation.expand(sequence, n)));
+			drawMountain(canvas2, config, mountain2);
+			document.getElementById("matrix").innerText = toMatrixString(mountain);
+			document.getElementById("matrix2").innerText = toMatrixString(mountain2);
 		}
 	</script>
 
