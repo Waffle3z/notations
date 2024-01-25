@@ -188,7 +188,7 @@ function expand(mountain, n) {
 			for (let k = badRootHeight - 1; k >= 0; k--) {
 				let parent = mountain[k].at(-1).parentIndex;
 				for (let i = result[k].length; i <= result[k+1].length; i++) {
-					let delta = result[k+1].find(v => v.position == result[k][i].position).value;
+					let delta = result[k+1].find(v => v.position == result[k][i-1].position + 1).value;
 					let numAncestors = 1 + countAncestors(result[k], parent);
 					result[k].push({
 						value: result[k][parent].value + delta + numAncestors,
