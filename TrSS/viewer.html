@@ -128,7 +128,7 @@
 				term.parentOverride = term.rootIndex;
 			});
 			row1.forEach(term => {
-				if (term.value < 0) {
+				if (term.value <= 0) {
 					term.textOverride = term.diff,
 					term.colorOverride = "#2af";
 				}
@@ -146,10 +146,10 @@
 
 		function toMatrixString(mountain) {
 			let matrix = mountain[0].map((v, i) => {
-				let diff = v.parentIndex == -1 ? v.value : v.value - mountain[0][v.parentIndex].value;
+				let diff = v.parentIndex == -1 ? 0 : v.value - mountain[0][v.parentIndex].value - 1;
 				return [v.numAncestors, diff];
 			});
-			return matrix.map(v => `(${v[0]},${v[1]})`).join("");
+			return matrix.map(v => `(${v[0]},${v[1]})`).join("").replaceAll(/,0\)/g,")");
 		}
 
 		function draw() {
