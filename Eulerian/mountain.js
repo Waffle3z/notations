@@ -120,6 +120,7 @@ function sequenceToRow(sequence) {
 		} else {
 			let root = i;
 			let diff = term.value - row[term.parentIndex].value;
+			term.parentDifference = diff;
 			for (let j = 0; j < diff; j++) {
 				root = row[root].parentIndex;
 				if (row[root].value == 0) break;

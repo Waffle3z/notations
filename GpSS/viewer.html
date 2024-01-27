@@ -82,7 +82,11 @@
 				});
 			});
 			row0.forEach(term => {
-				term.parentOverride = term.rootIndex;
+				let grandparentIndex = term.parentIndex;
+				if (term.parentDifference > 1) {
+					grandparentIndex = row0[term.parentIndex].parentIndex;
+				}
+				term.parentOverride = grandparentIndex;
 			});
 			return [row0, row1];
 		}

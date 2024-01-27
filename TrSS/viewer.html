@@ -79,10 +79,9 @@
 			let row1 = [];
 			row0.forEach((term, i) => {
 				if (term.parentIndex == -1) return;
-				let diff = term.value - row0[term.parentIndex].value;
 				row1.push({
-					value: diff - term.numAncestors,
-					diff: diff,
+					value: term.parentDifference - term.numAncestors,
+					diff: term.parentDifference,
 					position: i,
 					parentIndex: -1
 				});
