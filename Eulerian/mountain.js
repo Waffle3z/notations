@@ -1,10 +1,14 @@
-function drawMountain(canvas, config, mountain) {
+let viewerConfig = {
+	PADDING: 10
+};
+
+function drawMountain(canvas, mountain) {
 	let ctx = canvas.getContext("2d");
-	let PADDING = config.PADDING;
-	let rowWidth = config.rowWidth;
-	let rowHeight = config.rowHeight;
-	let textHeight = config.textHeight;
-	let lineSpace = config.lineSpace;
+	let PADDING = viewerConfig.PADDING;
+	let rowWidth = viewerConfig.rowWidth;
+	let rowHeight = viewerConfig.rowHeight;
+	let textHeight = viewerConfig.textHeight;
+	let lineSpace = viewerConfig.lineSpace;
 
 	function clear() {
 		ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -58,7 +62,7 @@ function drawMountain(canvas, config, mountain) {
 		return [(mountain[i][j].position)*rowWidth + width0/2 + PADDING, (mountain.length-i-1)*rowHeight + maxHeight + PADDING];
 	}
 
-	if (!config.hideVertical) {
+	if (!viewerConfig.hideVertical) {
 		for (let i = 1; i < mountain.length; i++) {
 			mountain[i].forEach((_, j) => {
 				let [x, y] = getPosition(i, j);
@@ -96,4 +100,67 @@ function drawMountain(canvas, config, mountain) {
 			ctx.fillText(text, x - measure.width / 2, y);
 		});
 	});
+}
+
+function sequenceToRow(sequence) {
+	let row = sequence.map((v, i) => {
+		return {value: v, position: i, parentIndex: sequence.findLastIndex((x, j) => x < v && j < i)};
+	});
+	row.forEach((term, i) => {
+		let numAncestors = 0;
+		let current = i;
+		while (true) {
+			current = row[current].parentIndex;
+			if (current == -1) break;
+			numAncestors++;
+		}
+		term.numAncestors = numAncestors;
+		if (term.parentIndex == -1) {
+			term.rootIndex = -1;
+		} else {
+			let root = i;
+			let diff = term.value - row[term.parentIndex].value;
+			for (let j = 0; j < diff; j++) {
+				root = row[root].parentIndex;
+				if (row[root].value == 0) break;
+			}
+			term.rootIndex = root;
+		}
+	});
+	return row;
+}
+	
+let canvas = document.getElementById("canvas");
+let canvas2 = document.getElementById("canvas2");
+
+let textInput = document.getElementById("sequenceInput");
+let rowWidthInput = document.getElementById("rowWidth");
+let rowHeightInput = document.getElementById("rowHeight");
+let textHeightInput = document.getElementById("textHeight");
+let lineSpacingInput = document.getElementById("lineSpacing");
+let expandInput = document.getElementById("expandInput");
+
+function viewerInitialize(config) {
+	if (config != null) {
+		for (let key in config) {
+			viewerConfig[key] = config[key];
+		}
+	}
+
+	expandInput.addEventListener("keyup", ({key}) => {
+		if (key == "Enter") {
+			viewerConfig.onViewerExpand();
+		}
+	});
+}
+
+function viewerUpdateConfig() {
+	viewerConfig.rowWidth = parseInt(rowWidthInput.value);
+	viewerConfig.rowHeight = parseInt(rowHeightInput.value);
+	viewerConfig.textHeight = parseInt(textHeightInput.value);
+	viewerConfig.lineSpace = parseInt(lineSpacingInput.value);
+	rowWidthInput.previousElementSibling.innerText = `Row Width: ${viewerConfig.rowWidth}`;
+	rowHeightInput.previousElementSibling.innerText = `Row Height: ${viewerConfig.rowHeight}`;
+	textHeightInput.previousElementSibling.innerText = `Text Height: ${viewerConfig.textHeight}`;
+	lineSpacingInput.previousElementSibling.innerText = `Line Spacing: ${viewerConfig.lineSpace}`;
 }

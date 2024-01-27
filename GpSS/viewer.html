@@ -8,10 +8,10 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" type="text/css" href="../styles.css">
 	<link rel="stylesheet" type="text/css" href="../Eulerian/styles.css">
-	<title>TrSS Row Viewer</title>
+	<title>GpSS Viewer</title>
 </head>
 <body>
-	<h2>TrSS Row Viewer</h2>
+	<h2>GpSS Viewer</h2>
 	<div style="display: flex">
 		<label for="sequenceInput">Sequence:</label>
 		<input type="text" id="sequenceInput" oninput="viewerDraw()">
@@ -37,8 +37,6 @@
 	<canvas id="canvas" style="border:2px solid #aaa;"></canvas>
 	<br>
 	<canvas id="canvas2" style="border:2px solid #aaa;"></canvas>
-	<h3 id="matrix"></h3>
-	<h3 id="matrix2"></h3>
 
 	<script src="notation.js"></script>
 	<script src="../Eulerian/mountain.js"></script>
@@ -49,10 +47,8 @@
 			let mountain = calcMountain(sequence);
 			drawMountain(canvas, mountain);
 			let n = parseInt(expandInput.value) || 0;
-			let mountain2 = calcMountain(flatten(notation.expand(sequence, n)));
+			let mountain2 = calcMountain(notation.expand(sequence, n));
 			drawMountain(canvas2, mountain2);
-			document.getElementById("matrix").innerText = toMatrixString(mountain);
-			document.getElementById("matrix2").innerText = toMatrixString(mountain2);
 		}
 
 		function onViewerExpand() {
@@ -79,10 +75,8 @@
 			let row1 = [];
 			row0.forEach((term, i) => {
 				if (term.parentIndex == -1) return;
-				let diff = term.value - row0[term.parentIndex].value;
 				row1.push({
-					value: diff - term.numAncestors,
-					diff: diff,
+					value: term.value - row0[term.parentIndex].value,
 					position: i,
 					parentIndex: -1
 				});
@@ -90,29 +84,15 @@
 			row0.forEach(term => {
 				term.parentOverride = term.rootIndex;
 			});
-			row1.forEach(term => {
-				if (term.value <= 0) {
-					term.textOverride = term.diff,
-					term.colorOverride = "#2af";
-				}
-			});
 			return [row0, row1];
 		}
 
-		function toMatrixString(mountain) {
-			let matrix = mountain[0].map((v, i) => {
-				let diff = v.parentIndex == -1 ? 0 : v.value - mountain[0][v.parentIndex].value - 1;
-				return [v.numAncestors, diff];
-			});
-			return matrix.map(v => `(${v[0]},${v[1]})`).join("").replaceAll(/,0\)/g,")");
-		}
-
-		textInput.value = "0,1,3,5";
+		textInput.value = "0,1,3,3";
 		viewerDraw();
 	</script>
 
 	<div id="footer">
-		<a href="../TrSS">Explorer</a> | 
+		<a href="../GpSS">Explorer</a> | 
 		<a href="../">Index</a>
 	</div>
 </body>

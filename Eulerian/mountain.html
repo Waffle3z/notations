@@ -14,24 +14,24 @@
 	<h2>Eulerian Mountain Viewer</h2>
 	<div style="display: flex">
 		<label for="sequenceInput">Sequence:</label>
-		<input type="text" id="sequenceInput" oninput="draw()">
+		<input type="text" id="sequenceInput" oninput="viewerDraw()">
 	</div>
 	<div style="display: flex">
-		<label for="expand"><button id="expandButton" onclick="onexpand()">Expand</button></label>
-		<input type="text" id="expandInput" value="3" style="width:20px; text-align:center; margin-right: 5px" oninput="draw()">
+		<label for="expand"><button id="expandButton" onclick="onViewerExpand()">Expand</button></label>
+		<input type="text" id="expandInput" value="3" style="width:20px; text-align:center; margin-right: 5px" oninput="viewerDraw()">
 	</div>
 	<br>
 	<div style="display: flex">
 		<label for="textHeight">Text Height:</label>
-		<input type="range" id="textHeight" min="12" max="64" value="20" oninput="draw()">
+		<input type="range" id="textHeight" min="12" max="64" value="20" oninput="viewerDraw()">
 		<label for="lineSpacing">Line Spacing:</label>
-		<input type="range" id="lineSpacing" min="0" max="20" value="4" oninput="draw()">
+		<input type="range" id="lineSpacing" min="0" max="20" value="4" oninput="viewerDraw()">
 	</div>
 	<div style="display: flex">
 		<label for="rowWidth">Row Width:</label>
-		<input type="range" id="rowWidth" min="0" max="200" value="20" oninput="draw()">
+		<input type="range" id="rowWidth" min="0" max="200" value="20" oninput="viewerDraw()">
 		<label for="rowHeight">Row Height:</label>
-		<input type="range" id="rowHeight" min="0" max="200" value="20" oninput="draw()">
+		<input type="range" id="rowHeight" min="0" max="200" value="20" oninput="viewerDraw()">
 	</div>
 	<br>
 	<canvas id="canvas" style="border:2px solid #aaa;"></canvas>
@@ -41,37 +41,25 @@
 	<script src="notation.js"></script>
 	<script src="mountain.js"></script>
 	<script>
-		let config = {
-			PADDING: 10
-		};
-		
-		let canvas = document.getElementById("canvas");
-		let canvas2 = document.getElementById("canvas2");
-
-		let textInput = document.getElementById("sequenceInput");
-		let rowWidthInput = document.getElementById("rowWidth");
-		let rowHeightInput = document.getElementById("rowHeight");
-		let textHeightInput = document.getElementById("textHeight");
-		let lineSpacingInput = document.getElementById("lineSpacing");
-		let expandInput = document.getElementById("expandInput");
-		textInput.value = "0,1,4,11,26,57,120";
-		draw();
-
-		function updateConfig() {
-			config.rowWidth = parseInt(rowWidthInput.value);
-			config.rowHeight = parseInt(rowHeightInput.value);
-			config.textHeight = parseInt(textHeightInput.value);
-			config.lineSpace = parseInt(lineSpacingInput.value);
-			rowWidthInput.previousElementSibling.innerText = `Row Width: ${config.rowWidth}`;
-			rowHeightInput.previousElementSibling.innerText = `Row Height: ${config.rowHeight}`;
-			textHeightInput.previousElementSibling.innerText = `Text Height: ${config.textHeight}`;
-			lineSpacingInput.previousElementSibling.innerText = `Line Spacing: ${config.lineSpace}`;
+		function viewerDraw() {
+			viewerUpdateConfig();
+			let mountain = getMountain();
+			drawMountain(canvas, mountain);
+			let n = parseInt(expandInput.value) || 0;
+			let expanded = expand(mountain, n);
+			drawMountain(canvas2, expanded);
 		}
 
-		expandInput.addEventListener("keyup", ({key}) => {
-			if (key == "Enter") {
-				onexpand();
-			}
+		function onViewerExpand() {
+			let mountain = getMountain();
+			let n = parseInt(expandInput.value) || 0;
+			let array = expand(mountain, n)[0].map(v => v.value).slice(0,1000);
+			textInput.value = array.join(",");
+			viewerDraw();
+		}
+
+		viewerInitialize({
+			onViewerExpand: onViewerExpand
 		});
 
 		function getMountain() {
@@ -83,22 +71,8 @@
 			return mountain;
 		}
 
-		function onexpand() {
-			let mountain = getMountain();
-			let n = parseInt(expandInput.value) || 0;
-			let array = expand(mountain, n)[0].map(v => v.value).slice(0,1000);
-			textInput.value = array.join(",");
-			draw();
-		}
-
-		function draw() {
-			updateConfig();
-			let mountain = getMountain();
-			drawMountain(canvas, config, mountain);
-			let n = parseInt(expandInput.value) || 0;
-			let expanded = expand(mountain, n);
-			drawMountain(canvas2, config, expanded);
-		}
+		textInput.value = "0,1,4,11,26,57,120";
+		viewerDraw();
 	</script>
 
 	<div id="footer">
