@@ -19,8 +19,9 @@ class notation {
 		let cutNode = out.pop();
 		let parentIndex = a.findLastIndex(v => v < cutNode);
 		let grandparentIndex = out.findLastIndex((v, i) => v < a[parentIndex] && i < parentIndex);
-		let increment = cutNode - a[grandparentIndex] - 1;
-		let badPart = out.slice(grandparentIndex);
+		let root = cutNode - a[parentIndex] > 1 ? grandparentIndex : parentIndex;
+		let increment = cutNode - a[root] - 1;
+		let badPart = out.slice(root);
 		for (let i = 1; i < n; i++) {
 			out.push(...badPart.map(v => v + increment * i));
 		}
