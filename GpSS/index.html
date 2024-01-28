@@ -11,5 +11,16 @@
 <body>
 	<script src="../main.js"></script>
 	<script src="notation.js"></script>
+	<script>
+		document.addEventListener("ancestorsChanged", () => {
+			let headerElement = document.body.querySelector("h2");
+			if (!headerElement) return;
+			if (maxAncestors == 1) {
+				headerElement.innerText = "Large Primitive Sequence System";
+			} else {
+				headerElement.innerText = ("Great ").repeat(maxAncestors-2) + "Grandparent Sequence System";
+			}
+		});
+	</script>
 </body>
 </html>

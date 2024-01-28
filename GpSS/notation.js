@@ -1,3 +1,16 @@
+let maxAncestors = 2;
+let version = "default";
+const ancestorsChangedEvent = new Event("ancestorsChanged");
+document.addEventListener("DOMContentLoaded", () => {
+	const queryString = window.location.search;
+	const urlParams = new URLSearchParams(queryString);
+	const requestedAncestors = Number(urlParams.get("ancestors"));
+	if (urlParams.get("ancestors") != null && !isNaN(requestedAncestors) && requestedAncestors >= 1) {
+		maxAncestors = requestedAncestors;
+		document.dispatchEvent(ancestorsChangedEvent);
+	}
+});
+
 class notation {
 	static title = "Grandparent Sequence System";
 	static footer = "<a href='viewer.html'>Row Viewer</a>";
@@ -11,18 +24,32 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		return [0, 1, n+3];
+		let sequence = [0];
+		for (let add = 1; add < maxAncestors; add++) {
+			sequence.push(sequence.at(-1) + add);
+		}
+		sequence.push(n + maxAncestors);
+		return sequence;
 	}
 
 	static expand(a, n) {
 		let out = [...a];
 		let cutNode = out.pop();
-		let parentIndex = a.findLastIndex(v => v < cutNode);
-		let grandparentIndex = out.findLastIndex((v, i) => v < a[parentIndex] && i < parentIndex);
-		let root = cutNode - a[parentIndex] > 1 ? grandparentIndex : parentIndex;
+		let ancestry = [a.length-1];
+		while (true) {
+			let current = ancestry.at(-1);
+			let parent = a.findLastIndex((v, i) => i < current && v < a[current]);
+			if (parent == -1) break;
+			ancestry.push(parent);
+		}
+		if (ancestry.length == 1) {
+			return out;
+		}
+		let parentDifference = cutNode - a[ancestry[1]];
+		let root = ancestry[Math.min(maxAncestors, parentDifference)];
 		let increment = cutNode - a[root] - 1;
 		let badPart = out.slice(root);
-		for (let i = 1; i < n; i++) {
+		for (let i = 1; i <= n; i++) {
 			out.push(...badPart.map(v => v + increment * i));
 		}
 		return out;

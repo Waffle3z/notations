@@ -81,18 +81,32 @@
 					parentIndex: -1
 				});
 			});
-			row0.forEach(term => {
-				let grandparentIndex = term.parentIndex;
-				if (term.parentDifference > 1) {
-					grandparentIndex = row0[term.parentIndex].parentIndex;
+			row0.forEach((term, i) => {
+				let ancestry = [i];
+				while (true) {
+					let current = ancestry.at(-1);
+					let parent = row0.findLastIndex((v, j) => v.value < term.value && j < current);
+					if (parent == -1) break;
+					ancestry.push(parent);
 				}
-				term.parentOverride = grandparentIndex;
+				let rootIndex = ancestry[Math.min(maxAncestors, term.parentDifference)];
+				term.parentOverride = rootIndex;
 			});
 			return [row0, row1];
 		}
 
 		textInput.value = "0,1,3,3";
 		viewerDraw();
+
+		document.addEventListener("ancestorsChanged", () => {
+			let name = ("G").repeat(maxAncestors-1) + "pSS";
+			if (maxAncestors == 1) {
+				name = "LPrSS";
+				textInput.value = "0,2";
+			}
+			document.body.querySelector("h2").innerText = name + " Viewer";
+			viewerDraw();
+		});
 	</script>
 
 	<div id="footer">
