@@ -33,6 +33,7 @@ class notation {
 	}
 
 	static expand(a, n) {
+		if (a.length == 1) return a;
 		let out = [...a];
 		let cutNode = out.pop();
 		let ancestry = [a.length-1];

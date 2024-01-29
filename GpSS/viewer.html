@@ -85,7 +85,7 @@
 				let ancestry = [i];
 				while (true) {
 					let current = ancestry.at(-1);
-					let parent = row0.findLastIndex((v, j) => v.value < term.value && j < current);
+					let parent = row0.findLastIndex((v, j) => v.value < row0[current].value && j < current);
 					if (parent == -1) break;
 					ancestry.push(parent);
 				}
