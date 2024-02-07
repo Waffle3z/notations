@@ -14,39 +14,25 @@ class notation {
 	}
 
 	static expand(a, n) {
-		function parent(n) {
-			if (a[n] === 0) return 0;
-			let r = n;
-			while (a[r] >= a[n]) r--;
-			return r;
-		}
-
-		let root = parent(a.length-1);
-		if (a[root] == a[a.length-1]-1) {
-			let out = a.slice(0, root);
-			let badPart = a.slice(root, -1);
-			for (let i = 0; i < n; i++) {
-				out = out.concat(badPart);
+		let getParent = i => a.findLastIndex((v, j) => j < i && v < a[i]);
+		let differences = a.map((v, i) => v - a[getParent(i)]);
+		let parentDifference = differences[a.length-1];
+		let root = getParent(a.length-1);
+		if (parentDifference > 1) {
+			while (differences[root] >= parentDifference) {
+				let parent = getParent(root);
+				if (parent == -1) break;
+				root = parent;
 			}
-			return out;
 		}
 
-		let differences = a.map((v, i) => v - a[parent(i)]);
-
-		let q = [];
-		for (let i = 0; i < a.length; i++) {
-			if (differences[i] < differences[a.length-1]) q.push(i);
+		let out = [...a];
+		let cutNode = out.pop();
+		let increment = cutNode - a[root] - 1;
+		let badPart = out.slice(root);
+		for (let i = 1; i <= n; i++) {
+			out.push(...badPart.map(v => v + increment * i));
 		}
-		root = a.length-1;
-		while (root != 0 && !q.includes(root)) root = parent(root);
-
-		let diff = a[a.length-1] - a[root] - 1;
-		let out = a.slice(0, root);
-		let badPart = a.slice(root, -1);
-		for (let i = 0; i < n; i++) {
-			out = out.concat(badPart.map((j) => j + diff * i));
-		}
-
 		return out;
 	}
 
@@ -55,10 +41,10 @@ class notation {
 	}
 
 	static toString(array) {
-		return "("+JSON.stringify(array).slice(1,-1)+")";
+		return JSON.stringify(array).slice(1,-1);
 	}
 
 	static fromString(s) {
-		return JSON.parse("["+s.slice(1,-1)+"]");
+		return JSON.parse("["+s+"]");
 	}
 };
