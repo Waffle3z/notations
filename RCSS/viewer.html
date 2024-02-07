@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv='cache-control' content='no-cache'> 
+	<meta http-equiv='expires' content='0'> 
+	<meta http-equiv='pragma' content='no-cache'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../styles.css">
+	<link rel="stylesheet" type="text/css" href="../Eulerian/styles.css">
+	<title>RCSS Viewer</title>
+</head>
+<body>
+	<h2>RCSS Viewer</h2>
+	<div style="display: flex">
+		<label for="sequenceInput">Sequence:</label>
+		<input type="text" id="sequenceInput" oninput="viewerDraw()">
+	</div>
+	<div style="display: flex">
+		<label for="expand"><button id="expandButton" onclick="onViewerExpand()">Expand</button></label>
+		<input type="text" id="expandInput" value="3" style="width:20px; text-align:center; margin-right: 5px" oninput="viewerDraw()">
+	</div>
+	<br>
+	<div style="display: flex">
+		<label for="textHeight">Text Height:</label>
+		<input type="range" id="textHeight" min="12" max="64" value="20" oninput="viewerDraw()">
+		<label for="lineSpacing">Line Spacing:</label>
+		<input type="range" id="lineSpacing" min="0" max="20" value="4" oninput="viewerDraw()">
+	</div>
+	<div style="display: flex">
+		<label for="rowWidth">Row Width:</label>
+		<input type="range" id="rowWidth" min="0" max="200" value="20" oninput="viewerDraw()">
+		<label for="rowHeight">Row Height:</label>
+		<input type="range" id="rowHeight" min="0" max="200" value="20" oninput="viewerDraw()">
+	</div>
+	<br>
+	<canvas id="canvas" style="border:2px solid #aaa;"></canvas>
+	<br>
+	<canvas id="canvas2" style="border:2px solid #aaa;"></canvas>
+
+	<script src="notation.js"></script>
+	<script src="../Eulerian/mountain.js"></script>
+	<script>
+		function viewerDraw() {
+			viewerUpdateConfig();
+			let sequence = getSequence();
+			let mountain = calcMountain(sequence);
+			drawMountain(canvas, mountain);
+			let n = parseInt(expandInput.value) || 0;
+			let mountain2 = calcMountain(notation.expand(sequence, n));
+			drawMountain(canvas2, mountain2);
+		}
+
+		function onViewerExpand() {
+			let sequence = getSequence();
+			let n = parseInt(expandInput.value) || 0;
+			let array = notation.expand(sequence, n).slice(0,1000);
+			textInput.value = array.join(",");
+			viewerDraw();
+		}
+
+		viewerInitialize({
+			hideVertical: true,
+			onViewerExpand: onViewerExpand
+		});
+
+		function getSequence() {
+			let inputText = textInput.value;
+			if (inputText.length == 0) inputText = "0";
+			return JSON.parse("["+inputText.match(/[0-9,]*[0-9]/)+"]");
+		}
+
+		function calcMountain(sequence) {
+			let row0 = sequenceToRow(sequence);
+			let row1 = [];
+			row0.forEach((term, i) => {
+				if (term.parentIndex == -1) return;
+				row1.push({
+					value: term.value - row0[term.parentIndex].value,
+					position: i,
+					parentIndex: -1
+				});
+			});
+			let maxDifferences = [];
+			for (let i = 0; i < row0.length; i++) {
+				maxDifferences[i] = 0;
+				let parent = row0.findLast((v, j) => j < i && v.value < row0[i].value);
+				if (parent != null) {
+					maxDifferences[i] = Math.min(maxDifferences[i], row0[i].value - parent.value);
+				}
+			}
+			row0.forEach((term, i) => {
+				let parent = row0.findLastIndex((v, j) => j < i && v.value < term.value);
+				if (parent == -1) return;
+				let diff = term.value - row0[parent].value;
+				let root = parent;
+				while (row0[root].value != 0) {
+					root = row0.findLastIndex((v, j) => j < root && v.value < term.value);
+					if (root == -1 || maxDifferences[root] <= diff) break;
+				}
+				term.parentOverride = root;
+			});
+			return [row0, row1];
+		}
+
+		textInput.value = "0,1,3,2";
+		viewerDraw();
+	</script>
+
+	<div id="footer">
+		<a href="../RCSS">Explorer</a> | 
+		<a href="../">Index</a>
+	</div>
+</body>
+</html>
