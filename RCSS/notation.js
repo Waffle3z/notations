@@ -12,7 +12,7 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		let a = [0,n+1];
+		let a = [0,1,n+2];
 		return a;
 	}
 
@@ -29,7 +29,13 @@ class notation {
 		let rootIndex = getParent(a.length-1);
 		if (rootIndex == -1) return a;
 		let parentDifference = a[a.length-1] - a[rootIndex];
-		if (parentDifference > 1) {
+		if (parentDifference == 1) {
+			while (childDifferences[rootIndex] > 1) {
+				let parent = getParent(rootIndex);
+				if (parent == -1) break;
+				rootIndex = parent;
+			}
+		} else {
 			while (childDifferences[rootIndex] >= parentDifference) {
 				let parent = getParent(rootIndex);
 				if (parent == -1) break;
