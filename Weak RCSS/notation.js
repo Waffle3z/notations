@@ -1,6 +1,6 @@
 class notation {
-	static title = "RCSS";
-	static header = "Restricted Child Sequence System";
+	static title = "Weak RCSS";
+	static header = "Weak Restricted Child Sequence System";
 	static footer = "<a href='viewer.html'>Row Viewer</a>";
 
 	static lessOrEqual(a, b) {
@@ -12,12 +12,12 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		let a = [0,n+1];
+		let a = [0,1,n+2];
 		return a;
 	}
 
 	static expand(a, n) {
-		let getParent = i => a.findLastIndex((v, j) => j < i && v < a[i]);
+		let getParent = i => a.findLastIndex((v, j) => v < a[i] && j < i);
 		let childDifferences = [];
 		for (let i = 0; i < a.length; i++) {
 			childDifferences[i] = 0;
@@ -28,15 +28,13 @@ class notation {
 		}
 		let rootIndex = getParent(a.length-1);
 		if (rootIndex == -1) return a;
-		let parentDifference = a[a.length-1] - a[rootIndex];
-		if (parentDifference > 1) {
-			while (childDifferences[rootIndex] >= parentDifference) {
-				let parent = getParent(rootIndex);
-				if (parent == -1) break;
-				rootIndex = parent;
-			}
+		let diff = a[a.length-1] - a[rootIndex];
+		while (childDifferences[rootIndex] > diff) {
+			let parent = getParent(rootIndex);
+			if (parent == -1) break;
+			rootIndex = parent;
 		}
-		
+
 		let out = [...a];
 		let cutNode = out.pop();
 		let increment = cutNode - a[rootIndex] - 1;
