@@ -199,7 +199,7 @@ function diffrow(currow,parentrow){
 				}
 			}while(comparearrays(tryrow,parentrow)<=0)
 			// console.log(tryrow)
-			if(tries++>100){
+			if(tries++>10000){
 				throw "tries sus"
 			}
 		}
