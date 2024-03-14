@@ -44,6 +44,13 @@ class notation {
 			return x;
 		});
 		s = s.replaceAll("[0,1,ω]", "ε₀");
+		s = s.replaceAll("[0,1,ω,ω]", "ε₁");
+		s = s.replaceAll("[0,1,ω,ω,ω]", "ε₂");
+		s = s.replaceAll("[0,1,ω,ω+1]", "ε_ω");
+		s = s.replaceAll("[0,1,ω,ω^2]", "ζ₀");
+		s = s.replaceAll("[0,1,ω,ω^ω]", "ψ₀(Ω₂)");
+		s = s.replaceAll("[0,1,ω,ε₀]", "ψ₀(Ω_ω)");
+		s = s.replaceAll("[0,1,ω,ε₀,ε₀]", "ψ₀(Ω_ω·2)");
 		return s;
 	}
 };
@@ -55,12 +62,12 @@ function isPrefix(x, y) {
 	return x.length < y.length && notation.toString(y.slice(0, x.length)) === notation.toString(x);
 }
 
-function replacable(x, y) {
+function replaceable(x, y) {
 	if (x.length === 0 || y[y.length - 1].length === 0) return true;
 	for (let i = x.length; i < y.length; i++) {
 		if (!isPrefix(x[x.length - 1], y[i])) return false;
 	}
-	return replacable(x[x.length - 1], y[y.length - 1]);
+	return replaceable(x[x.length - 1], y[y.length - 1]);
 }
 
 function replacePrefix(a, x, y) {
@@ -89,14 +96,8 @@ function decrement(a) {
 
 function expand(a, n) {
 	if (a.length === 0) return [];
-	let k = 0;
-	for (let i = a.length-1; i >= 0; i--) {
-		if (replacable(a.slice(0, i), a)) {
-			k = i;
-			break;
-		}
-	}
-	const x = a.slice(0, k);
+	let k = a.findLastIndex((_, i) => replaceable(a.slice(0, i), a));
+	const x = k == -1 ? [] : a.slice(0, k);
 	const y = decrement(a);
 	let b = y;
 	for (let i = 0; i < n; i++) {
@@ -112,7 +113,7 @@ function limit(n) {
 }
 
 function count(a) {
-	return 1 + a.reduce((acc, x) => acc + count(x), 0);
+	return a.reduce((acc, x) => acc + count(x), 1);
 }
 
 function numeric(a) {
