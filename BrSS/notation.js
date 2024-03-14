@@ -29,7 +29,8 @@ class notation {
 	}
 
 	static convertToNotation(value) {
-		if (!settings.simplify) return value;
+		if (settings.notation == "Numeric") return numeric(notation.fromString(value));
+		if (settings.notation == "Brackets") return value;
 		let s = value.replaceAll(/\]\[/g,"],[").replaceAll(/\[\]/g,"0");
 		while (true) {
 			let next = s.replaceAll(/\[([0,]+)\]/g,(_, n) => `${(n.length+1)/2}`);
@@ -115,7 +116,7 @@ function count(a) {
 }
 
 function numeric(a) {
-	return "Br(" + a.map(x => count(x)).join(',') + ")";
+	return a.map(x => count(x)).join(',');
 }
 
 function PrSStoCNF(s) {
@@ -148,11 +149,16 @@ function PrSStoCNF(s) {
 	return out.substring(1);
 }
 
+function setNotation(newNotation) {
+	settings.notation = newNotation;
+	refreshTerms();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-	settings.simplify = true;
-	const simplifyCheckbox = document.getElementById("simplify");
-	simplifyCheckbox.addEventListener('change', function() {
-		settings.simplify = simplifyCheckbox.checked;
-		refreshTerms();
+	settings.notation = "Simplified";
+	document.querySelectorAll('input[name="notation"]').forEach(function(radioInput) {
+		radioInput.addEventListener('change', function() {
+			setNotation(radioInput.value);
+		});
 	});
 });
