@@ -31,6 +31,19 @@ class notation {
 	static convertToNotation(value) {
 		if (settings.notation == "Numeric") return numeric(notation.fromString(value));
 		if (settings.notation == "Brackets") return value;
+		if (settings.notation == "Hydra") {
+			let list = [];
+			let balance = 0;
+			for (let i = 0; i < value.length; i++) {
+				if (value[i] == "[") {
+					list.push(balance);
+					balance++;
+				} else {
+					balance--;
+				}
+			}
+			return "(" + list.join(")(") + ")";
+		}
 		let s = value.replaceAll(/\]\[/g,"],[").replaceAll(/\[\]/g,"0");
 		while (true) {
 			let next = s.replaceAll(/\[([0,]+)\]/g,(_, n) => `${(n.length+1)/2}`);
