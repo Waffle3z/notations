@@ -78,13 +78,35 @@ function expandButton(button) {
 	let compare = nextButtonDown(button);
 	if (compare) {
 		let compareTerm = notation.fromString(compare.getAttribute("value"));
-		while (notation.lessOrEqual(expandstr(str, index), compareTerm)) {
-			index++;
+		let low = index;
+		let high = index + 1;
+		while (notation.lessOrEqual(expandstr(str, high), compareTerm)) {
+			low = high;
+			high *= 2;
+			if (high > 10000) throw new Error("index is too high");
 		}
+		while (low < high) { // binary search
+			const mid = Math.floor((low + high) / 2);
+			if (notation.lessOrEqual(expandstr(str, mid), compareTerm)) {
+				low = mid + 1;
+			} else {
+				high = mid;
+			}
+		}
+		index = low;
 	}
 	
 	let term = expandstr(str, index);
 	return createButton(notation.toString(term), children, notation.isSuccessor(term));
+}
+
+function expandButtonRecursively(button) {
+	const ms = Date.now();
+	for (let i = 0; i < 1000; i++) {
+		button = expandButton(button);
+		if (!button) break;
+		if (Date.now() - ms > 50) break;
+	}
 }
 
 function indentli(li, index) {
@@ -117,7 +139,7 @@ function createButton(value, parent, isLeaf) {
 	if (isLeaf) expand.classList.add("hidden");
 	expand.innerText = "+";
 	childItem.appendChild(expand);
-	expand.addEventListener("click", () => expandButton(button));
+	expand.addEventListener("click", () => expandButtonRecursively(button));
 
 	childItem.appendChild(button);
 	if (!isLeaf) {
@@ -333,13 +355,7 @@ function initialize() {
 			}
 		} else if (event.key === "Enter") {
 			event.preventDefault();
-			let button = selectedButton;
-			const ms = Date.now();
-			for (let i = 0; i < 1000; i++) {
-				button = expandButton(button);
-				if (!button) break;
-				if (Date.now() - ms > 10) break;
-			}
+			expandButtonRecursively(selectedButton);
 		} else if (event.key === " ") {
 			event.preventDefault();
 			expandButton(selectedButton);

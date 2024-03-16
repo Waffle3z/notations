@@ -16,7 +16,7 @@ class notation {
 	}
 
 	static isSuccessor(array) {
-		let s = notation.toString(array)
+		let s = notation.toString(array);
 		return s.length == 0 || s.endsWith("[]");
 	}
 
@@ -44,6 +44,9 @@ class notation {
 			return x;
 		});
 		s = s.replaceAll("[0,1,ω]", "ε₀");
+		s = s.replaceAll("[0,1,ω,0]", "ε₀+1");
+		s = s.replaceAll("[0,1,ω,1]", "ε₀·ω");
+		s = s.replaceAll("[0,1,ω,2]", "ε₀^ω");
 		s = s.replaceAll("[0,1,ω,ω]", "ε₁");
 		s = s.replaceAll("[0,1,ω,ω,ω]", "ε₂");
 		s = s.replaceAll("[0,1,ω,ω+1]", "ε_ω");
@@ -58,6 +61,7 @@ class notation {
 // Bracket Sequence System (BrSS) ver 1.2
 // https://discord.com/channels/206932820206157824/209051725741424641/1217453334726709401
 
+// y begins with all of the same elements as x
 function isPrefix(x, y) {
 	return x.length < y.length && notation.toString(y.slice(0, x.length)) === notation.toString(x);
 }
@@ -84,10 +88,11 @@ function replacePrefix(a, x, y) {
 			flag = false;
 		}
 		b = b.concat([c]);
-	}
+	}	
 	return b;
 }
 
+// remove the rightmost []
 function decrement(a) {
 	if (a.length === 0) return [];
 	if (a[a.length - 1].length === 0) return a.slice(0, -1);
