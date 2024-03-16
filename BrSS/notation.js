@@ -1,7 +1,7 @@
 class notation {
 	static title = "BrSS";
 	static header = "Bracket Sequence System";
-	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1217453334726709401'>Definition</a> by tb148 / 貓娘 “Catgirl”";
+	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1218367946498506753'>Definition</a> by tb148 / 貓娘 “Catgirl” (v1.2.1)";
 
 	static lessOrEqual(a, b) {
 		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) <= notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
@@ -58,9 +58,6 @@ class notation {
 	}
 };
 
-// Bracket Sequence System (BrSS) ver 1.2
-// https://discord.com/channels/206932820206157824/209051725741424641/1217453334726709401
-
 // y begins with all of the same elements as x
 function isPrefix(x, y) {
 	return x.length < y.length && notation.toString(y.slice(0, x.length)) === notation.toString(x);
@@ -114,7 +111,7 @@ function expand(a, n) {
 
 function limit(n) {
 	if (n === 0) return [];
-	return [[], limit(n - 1)];
+	return [[], new Array(n).fill([])];
 }
 
 function count(a) {
