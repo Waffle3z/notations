@@ -138,6 +138,12 @@ function PrSStoCNF(s) {
 	let coefficient = 1;
 	let root = 0;
 
+	for (let i = s.length-2; i > 0; i--) {
+		if (s[i] == s[i-1] && s[i+1] > s[i]) {
+			s.splice(i, 1);
+		}
+	}
+
 	for (let i = 0; i <= s.length; i++) {
 		if ((s[i + 1] === s[0]) || (i + 1 >= s.length)) {
 			let branches = 0;
