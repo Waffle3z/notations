@@ -51,10 +51,7 @@ class notation {
 			s = next;
 		}
 		s = s.replaceAll(/\[[0-9,]+\]/g, function(x) {
-			if (x.startsWith("[0,1")) {
-				return PrSStoCNF(JSON.parse(x));
-			}
-			return x;
+			return PrSStoCNF(JSON.parse(x));
 		});
 		s = s.replaceAll("[0,1,ω]", "ε₀");
 		s = s.replaceAll("[0,1,ω,0]", "ε₀+1");

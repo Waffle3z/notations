@@ -28,7 +28,6 @@ class notation {
 	}
 
 	static convertToNotation(value) {
-		if (settings.notation == "Numeric") return numeric(notation.fromString(value));
 		if (settings.notation == "Brackets") return value;
 		if (settings.notation == "Hydra") {
 			let list = [];
@@ -50,15 +49,16 @@ class notation {
 			s = next;
 		}
 		s = s.replaceAll(/\[[0-9,]+\]/g, function(x) {
-			if (x.startsWith("[0,1")) {
-				let a = JSON.parse(x);
-				for (let i = 1; i < a.length; i++) {
-					if (a[i] - a[i-1] > 1) return x;
-				}
-				return PrSStoCNF(a);
+			let a = JSON.parse(x);
+			for (let i = 1; i < a.length; i++) {
+				if (a[i] - a[i-1] > 1) return x;
 			}
-			return x;
+			return PrSStoCNF(a);
 		});
+		s = s.replaceAll("[0,1,3]", "ε₀");
+		s = s.replaceAll("[0,1,4]", "ζ₀");
+		s = s.replaceAll("[0,1,5]", "η₀");
+		s = s.replaceAll("[0,1,ω]", "φ(ω,0)");
 		return s;
 	}
 };
@@ -121,16 +121,8 @@ function expand(a, n) {
 }
 
 function limit(n) {
-	if (n === 0) return [];
-	return [[], new Array(n).fill([])];
-}
-
-function count(a) {
-	return a.reduce((acc, x) => acc + count(x), 1);
-}
-
-function numeric(a) {
-	return a.map(x => count(x)).join(',');
+	if (n === 0) return [];	
+	return [[], limit(n-1)];
 }
 
 function PrSStoCNF(s) {
