@@ -50,10 +50,17 @@ class notation {
 		}
 		s = s.replaceAll(/\[[0-9,]+\]/g, function(x) {
 			let a = JSON.parse(x);
-			for (let i = 1; i < a.length; i++) {
-				if (a[i] - a[i-1] > 1) return x;
+
+			for (let i = a.length-2; i > 0; i--) { // standardize
+				if (a[i] == a[i-1] && a[i+1] > a[i]) {
+					a.splice(i, 1);
+				}
 			}
-			return PrSStoCNF(a);
+			
+			for (let i = 1; i < a.length; i++) {
+				if (a[i] - a[i-1] > 1) return JSON.stringify(a);
+			}
+			return PrSStoCNF(standardizePrSS(a));
 		});
 		s = s.replaceAll("[0,1,3]", "ε₀");
 		s = s.replaceAll("[0,1,4]", "ζ₀");
@@ -125,17 +132,34 @@ function limit(n) {
 	return [[], limit(n-1)];
 }
 
+function standardizePrSS(s) {
+	let siblings = [];
+	let current;
+	for (let i = 0; i < s.length; i++) {
+		if (s[i] == 0) {
+			current = [];
+			siblings.push(current);
+		}
+		current.push(s[i]);
+	}
+	for (let i = 0; i < siblings.length; i++) {
+		if (siblings[i].includes(1)) {
+			siblings[i] = [0, ...standardizePrSS(siblings[i].slice(1).map(x => x-1)).map(x => x+1)];
+		}
+	}
+	for (let i = siblings.length - 2; i >= 0; i--) {
+		if (siblings[i] < siblings[i+1]) {
+			siblings.splice(i, 1);
+		}
+	}
+	return siblings.flat();
+}
+
 function PrSStoCNF(s) {
 	let out = "";
 	let lastterm = "";
 	let coefficient = 1;
 	let root = 0;
-
-	for (let i = s.length-2; i > 0; i--) {
-		if (s[i] == s[i-1] && s[i+1] > s[i]) {
-			s.splice(i, 1);
-		}
-	}
 
 	for (let i = 0; i <= s.length; i++) {
 		if ((s[i + 1] === s[0]) || (i + 1 >= s.length)) {
