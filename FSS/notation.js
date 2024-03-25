@@ -66,6 +66,7 @@ class notation {
 };
 
 function toString(a) {
+	if (a == null) return "null";
 	return notation.convertToNotation(notation.toString(a));
 }
 
@@ -82,19 +83,19 @@ function searchForParent(root, target) {
 	let current = [[[]]];
 	while (true) {
 		let rootIndex = findPrefixInExpansion(root, current)[1];
-		let [next, nextIndex] = findNextInExpansion(target, current);
-		if (nextIndex > rootIndex + 1 && rootIndex != -1) {
+		let [next, nextIndex] = findPrefixInExpansion(target, current);
+		if (nextIndex > rootIndex && rootIndex != -1) {
 			candidates.push(current);
 		}
-		current = next;
+		current = expand(current, nextIndex + 1);
 		if (notation.isSuccessor(current)) break;
 	}
 
 	// find the candidate whose expansion contains the largest prefix of the root
 	let parent, prefix;
 	for (let i = 0; i < candidates.length; i++) {
-		let index = findNextInExpansion(root, candidates[i])[1];
-		let previous = expand(candidates[i], index - 1);
+		let index = findPrefixInExpansion(root, candidates[i])[1];
+		let previous = expand(candidates[i], index);
 		if (prefix == null || notation.lessThan(prefix, previous)) {
 			parent = candidates[i];
 			prefix = previous;
@@ -104,29 +105,18 @@ function searchForParent(root, target) {
 	return parent;
 }
 
-// find the next greater term in the expansion of parent
-function findNextInExpansion(term, parent) {
-	if (notation.lessOrEqual(parent, term)) return [null, -1]; // parent should be greater than term
-	let index = 0;
-	let element = expand(parent, 0);
-	while (notation.lessOrEqual(element, term)) {
-		element = expand(parent, ++index);
-	}
-	return [element, index];
-}
-
+// find the largest term in the expansion of parent less than or equal to the target
 function findPrefixInExpansion(term, parent) {
 	if (notation.lessThan(parent, term)) return [null, -1]; // parent should be greater than or equal to term
 	let index = 0;
 	let element = expand(parent, 0);
 	if (notation.lessThan(term, element)) return [null, -1]; // term should be at least parent[0]
-	while (notation.lessOrEqual(element, term)) {
+	while (true) {
 		let next = expand(parent, index + 1);
-		if (!notation.lessOrEqual(next, term)) break;
+		if (notation.lessThan(term, next)) return [element, index];
 		element = next;
 		index++;
 	}
-	return [element, index];
 }
 
 function expand(a, n) {
@@ -135,12 +125,12 @@ function expand(a, n) {
 	if (str === "0,1") return Array(n).fill([]);
 	if (a.length === 0) return [];
 	if (n == 0) {
-		for (let i = a.length - 2; i >= 0; i--) { // cut the last increasing sequence
-			if (notation.lessOrEqual(a[a.length - 1], a[i])) {
+		for (let i = a.length - 2; i >= 0; i--) { // cut the last nondecreasing sequence
+			if (notation.lessThan(a[i+1], a[i])) {
 				return a.slice(0, i + 1);
 			}
 		}
-		return a.slice(0, -1); // cut the last element if the whole sequence is increasing
+		return a.slice(0, -1); // cut the last element if the whole sequence is nondecreasing
 	}
 	a = [...a];
 	let cutNode = a.pop();
@@ -154,7 +144,7 @@ function expand(a, n) {
 	let root = a[rootIndex];
 	let badPart = [predecessor, ...a.slice(rootIndex + 1)];
 	if (notation.equal(root, predecessor)) { // cut node == root + 1
-		for (let i = 1; i <= n; i++) {
+		for (let i = 1; i < n; i++) {
 			a.push(...badPart);
 		}
 		if (notation.isSuccessor(a)) {
@@ -165,7 +155,7 @@ function expand(a, n) {
 
 	let parent = searchForParent(root, predecessor);
 	let indexRoot = findPrefixInExpansion(root, parent)[1];
-	let indexPredecessor = findNextInExpansion(predecessor, parent)[1] - 1;
+	let indexPredecessor = findPrefixInExpansion(predecessor, parent)[1];
 	let increment = indexPredecessor - indexRoot;
 	for (let i = 1; i <= n; i++) {
 		// for each element in the bad part, if it's in the parent then move the index and copy the suffix
