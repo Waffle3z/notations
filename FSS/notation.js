@@ -15,7 +15,7 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		return limit(n+1);
+		return bigLimit(n+1);
 	}
 
 	static expand(a, n) {
@@ -174,10 +174,18 @@ function expand(a, n) {
 	return a;
 }
 
+function bigLimit(n) {
+	if (n === 0) return [];
+	return [[], bigLimit(n-1)];
+}
+
 function limit(n) {
 	if (n === 0) return [];
-	if (n === 1) return [[]];
-	return [[], limit(n-1)];
+	let a = [];
+	for (let i = 0; i < n; i++) {
+		a.push(limit(i));
+	}
+	return a;
 }
 
 function standardizePrSS(s) {
