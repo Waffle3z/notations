@@ -171,6 +171,7 @@ function expand(a, n) {
 	let parent = searchForParent(root, predecessor);
 	let rootTrajectory = getTrajectory(root, parent);
 	let badPartTrajectories = badPart.map(x => getTrajectory(x, parent));
+	let predecessorTrajectory = badPartTrajectories[0];
 
 	for (let i = 1; i <= n; i++) {
 		// for each element in the bad part, if it's in the parent then move the index
@@ -182,10 +183,14 @@ function expand(a, n) {
 				let current = parent;
 				for (let k = 0; k < trajectory.length; k++) {
 					let increment = 0;
-					if (k >= rootTrajectory.length || rootTrajectory[k] < trajectory[k])
-					{
+					let index = trajectory[k];
+					if (k >= predecessorTrajectory.length || predecessorTrajectory[k] < index) {
+						// bound the increment trajectory of terms in the bad part to at most match the predecessor
+						index = predecessorTrajectory.length <= k ? 0 : predecessorTrajectory[k];
+					}
+					if (k >= rootTrajectory.length || rootTrajectory[k] < index) {
 						let base = k >= rootTrajectory.length ? 0 : rootTrajectory[k];
-						increment = shift * (trajectory[k] - base);
+						increment = shift * (index - base);
 					}
 					let bIsNotLast = k < trajectory.length - 1;
 					current = expand(current, trajectory[k] + increment + bIsNotLast);
