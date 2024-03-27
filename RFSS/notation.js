@@ -1,6 +1,6 @@
 class notation {
-	static title = "FSS";
-	static header = "Fundamental Sequence System";
+	static title = "RFSS";
+	static header = "Recursive Fundamental Sequence System";
 
 	static lessOrEqual(a, b) {
 		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) <= notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
@@ -119,6 +119,19 @@ function findPrefixInExpansion(term, parent) {
 	}
 }
 
+function getTrajectory(term, parent) {
+	let chain = [];
+	let current = parent;
+	while (true) {
+		let [element, index] = findPrefixInExpansion(term, current);
+		chain.push(index);
+		if (notation.equal(element, term)) {
+			return chain;
+		}
+		current = expand(current, chain[chain.length-1] + 1);
+	}
+}
+
 function expand(a, n) {
 	let str = toString(a);
 	if (str === "1") return limit(n);
@@ -155,17 +168,28 @@ function expand(a, n) {
 	}
 
 	let parent = searchForParent(root, predecessor);
-	let indexRoot = findPrefixInExpansion(root, parent)[1];
-	let indexPredecessor = findPrefixInExpansion(predecessor, parent)[1];
-	let increment = indexPredecessor - indexRoot;
+	let rootTrajectory = getTrajectory(root, parent);
+	let badPartTrajectories = badPart.map(x => getTrajectory(x, parent));
+
 	for (let i = 1; i <= n; i++) {
-		// for each element in the bad part, if it's in the parent then move the index and copy the suffix
+		// for each element in the bad part, if it's in the parent then move the index
+		// find the recursive expansion that results in the suffix, and also move those indices
 		let copy = [...badPart].map((x, j) => {
 			if (notation.lessThan(x, parent)) {
-				let [prefix, index] = findPrefixInExpansion(x, parent);
-				let term = expand(parent, index + increment * (j == 0 ? i - 1 : i));
-				term.push(...x.slice(prefix.length)); // copy suffix
-				return term;
+				let shift = j == 0 ? i - 1 : i; // predecessor is shifted 1 group less
+				let trajectory = badPartTrajectories[j];
+				let current = parent;
+				for (let k = 0; k < trajectory.length; k++) {
+					let increment = 0;
+					if (k >= rootTrajectory.length || rootTrajectory[k] < trajectory[k])
+					{
+						let base = k >= rootTrajectory.length ? 0 : rootTrajectory[k];
+						increment = shift * (trajectory[k] - base);
+					}
+					let bIsNotLast = k < trajectory.length - 1;
+					current = expand(current, trajectory[k] + increment + bIsNotLast);
+				}
+				return current;
 			}
 			return x;
 		});
