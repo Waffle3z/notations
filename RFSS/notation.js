@@ -120,6 +120,7 @@ function findPrefixInExpansion(term, parent) {
 }
 
 function getTrajectory(term, parent) {
+	if (notation.lessOrEqual(parent, term)) return [];
 	let chain = [];
 	let current = parent;
 	while (true) {
