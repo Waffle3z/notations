@@ -3,15 +3,15 @@ class notation {
 	static header = "Fundamental Sequence System";
 
 	static lessOrEqual(a, b) {
-		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) <= notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
+		return compareTerms(a, b) <= 0;
 	}
 
 	static lessThan(a, b) {
-		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) < notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
+		return compareTerms(a, b) === -1;
 	}
 
 	static equal(a, b) {
-		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) == notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
+		return compareTerms(a, b) === 0;
 	}
 
 	static expandLimit(n) {
@@ -65,6 +65,15 @@ class notation {
 	}
 };
 
+function compareTerms(a, b) {
+	for (let i = 0; i < a.length; i++) {
+		if (i >= b.length) return 1; // a > b
+		let c = compareTerms(a[i], b[i]);
+		if (c != 0) return c;
+	}
+	return b.length > a.length ? -1 : 0;
+}
+
 function toString(a) {
 	if (a == null) return "null";
 	return notation.convertToNotation(notation.toString(a));
@@ -81,7 +90,9 @@ function searchForParent(root, target) {
 	// find limits where x[0] <= root < target < x
 	let candidates = [];
 	let current = [[[]]];
+	let iter = 0;
 	while (true) {
+		iter++;
 		let rootIndex = findPrefixInExpansion(root, current)[1];
 		let [next, nextIndex] = findPrefixInExpansion(target, current);
 		if (nextIndex > rootIndex && rootIndex != -1) {
@@ -119,24 +130,36 @@ function findPrefixInExpansion(term, parent) {
 	}
 }
 
+let expandCache = new Map();
+function cacheResult(hash, out) {
+	expandCache.set(hash, deepcopy(out));
+	return out;
+}
+
+function deepcopy(term) {
+	return [...term.map(x => deepcopy(x))];
+}
+
 function expand(a, n) {
 	let str = toString(a);
-	if (str === "1") return limit(n);
-	if (str === "0,1") return Array(n).fill([]);
+	let hash = JSON.stringify([a, n]);
+	if (expandCache.has(hash)) return deepcopy(expandCache.get(hash));
+	if (str === "1") return cacheResult(hash, limit(n));
+	if (str === "0,1") return cacheResult(hash, Array(n).fill([]));
 	if (a.length === 0) return [];
 	if (n == 0) {
 		for (let i = a.length - 2; i >= 0; i--) { // cut the last nondecreasing sequence
 			if (notation.lessThan(a[i+1], a[i])) {
-				return a.slice(0, i + 1);
+				return cacheResult(hash, a.slice(0, i + 1));
 			}
 		}
-		return a.slice(0, -1); // cut the last element if the whole sequence is nondecreasing
+		return cacheResult(hash, a.slice(0, -1)); // cut the last element if the whole sequence is nondecreasing
 	}
 	let out = [...a];
 	let cutNode = out.pop();
 	if (!notation.isSuccessor(cutNode)) {
 		out.push(expand(cutNode, n));
-		return out;
+		return cacheResult(hash, out);
 	}
 
 	let predecessor = decrement(cutNode);
@@ -151,7 +174,7 @@ function expand(a, n) {
 			out.push(...badPart);
 		}
 		if (notation.isSuccessor(out)) out.pop();
-		return out;
+		return cacheResult(hash, out);
 	}
 
 	let parent = searchForParent(root, predecessor);
@@ -164,7 +187,15 @@ function expand(a, n) {
 			if (notation.lessThan(x, parent)) {
 				let [prefix, index] = findPrefixInExpansion(x, parent);
 				let term = expand(parent, index + increment * (j == 0 ? i - 1 : i));
-				term.push(...x.slice(prefix.length)); // copy suffix
+				let innerTerm = term;
+				let innerPrefix = prefix;
+				let innerX = x;
+				while (innerX.length == innerPrefix.length && innerX.length > 0) {
+					innerX = innerX[innerX.length - 1];
+					innerPrefix = innerPrefix[innerPrefix.length - 1];
+					innerTerm = innerTerm[innerTerm.length - 1];
+				}
+				innerTerm.push(...innerX.slice(innerPrefix.length)); // copy suffix
 				return term;
 			}
 			return x;
@@ -172,7 +203,7 @@ function expand(a, n) {
 		out.push(...copy);
 	}
 
-	return out;
+	return cacheResult(hash, out);
 }
 
 function bigLimit(n) {
