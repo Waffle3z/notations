@@ -105,7 +105,7 @@ function expandButtonRecursively(button) {
 	for (let i = 0; i < 1000; i++) {
 		button = expandButton(button);
 		if (!button) break;
-		if (Date.now() - ms > 50) break;
+		if (Date.now() - ms > 200) break;
 	}
 }
 

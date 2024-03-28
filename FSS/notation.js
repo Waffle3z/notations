@@ -158,7 +158,7 @@ function expand(a, n) {
 	let out = [...a];
 	let cutNode = out.pop();
 	if (!notation.isSuccessor(cutNode)) {
-		out.push(expand(cutNode, n));
+		out.push(expand(cutNode, toString(cutNode) === "0,1" ? n : n-1));
 		return cacheResult(hash, out);
 	}
 
