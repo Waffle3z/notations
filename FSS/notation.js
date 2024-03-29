@@ -1,3 +1,15 @@
+let version = "1";
+document.addEventListener("DOMContentLoaded", () => {
+	setTimeout(function() { // optional version parameter
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const requestedVersion = urlParams.get("version");
+		if (requestedVersion) {
+			version = requestedVersion;
+		}
+	}, 1);
+});
+
 class notation {
 	static title = "FSS";
 	static header = "Fundamental Sequence System";
@@ -158,7 +170,11 @@ function expand(a, n) {
 	let out = [...a];
 	let cutNode = out.pop();
 	if (!notation.isSuccessor(cutNode)) {
-		out.push(expand(cutNode, toString(cutNode) === "0,1" ? n : n-1));
+		if (version == "1.1") {
+			out.push(expand(cutNode, n-1));
+		} else {
+			out.push(expand(cutNode, toString(cutNode) === "0,1" ? n : n-1));
+		}
 		return cacheResult(hash, out);
 	}
 
