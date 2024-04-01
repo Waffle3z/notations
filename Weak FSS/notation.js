@@ -43,7 +43,7 @@ class notation {
 			if (next == s) break;
 			s = next;
 		}
-		s = s.replaceAll(/\[[0-9,]+\]/g, function(x) {
+		s = s.replaceAll(/\[0[0-9,]*\]/g, function(x) {
 			let a = JSON.parse(x);
 
 			for (let i = a.length-2; i > 0; i--) { // standardize
@@ -66,6 +66,8 @@ class notation {
 		s = s.replaceAll("[0,1,ω,ω^2]", "ζ₀");
 		s = s.replaceAll("[0,1,ω,ω^2,ω^3]", "η₀");
 		s = s.replaceAll("[0,1,ω,ω^ω]", "φ(ω,0)");
+		s = s.replaceAll("[1]", "Ω");
+		s = s.replaceAll("[2]", "Ω₂");
 		return s;
 	}
 };
@@ -85,10 +87,27 @@ function toString(a) {
 }
 
 function expand(a, n) {
-	let str = toString(a);
-	if (str === "1") return limit(n);
-	if (str === "0,1") return Array(n).fill([]);
 	if (a.length === 0) return [];
+	let str = toString(a);
+	let out = [...a];
+	let cutNode = out.pop();
+
+	if (notation.lessOrEqual([[[]]], cutNode)) { // Ω
+		if (!notation.isSuccessor(cutNode[0])) {
+			out.push([notation.expand(cutNode[0], n)])
+			return out;
+		}
+		let previous = [cutNode[0].slice(0, -1)];
+		if (cutNode[0].length == 1) previous = [];
+		let b = [[]];
+		if (previous.length != 0) b.push(previous);
+		for (let i = 0; i < n; i++) {
+			b.push([...b]);
+		}
+		out.push(...b.slice(1));
+		return out;
+	}
+	if (str === "0,1") return Array(n).fill([]);
 	if (n == 0) {
 		for (let i = a.length - 2; i >= 0; i--) { // cut the last nondecreasing sequence
 			if (notation.lessThan(a[i+1], a[i])) {
@@ -98,8 +117,6 @@ function expand(a, n) {
 		return a.slice(0, -1); // cut the last element if the whole sequence is nondecreasing
 	}
 
-	let out = [...a];
-	let cutNode = out.pop();
 	let rootIndex = out.findLastIndex(v => notation.lessThan(v, cutNode));
 	let root = out[rootIndex];
 
@@ -113,7 +130,7 @@ function expand(a, n) {
 		}
 		return out;
 	}
-
+	
 	let badPart = [...out.slice(rootIndex)];
 	let zeroth = [...out];
 	if (notation.isSuccessor(zeroth)) zeroth.pop();
@@ -127,14 +144,12 @@ function expand(a, n) {
 
 function limit(n) {
 	if (n === 0) return [];
-	let a = [];
-	for (let i = 0; i < n; i++) {
-		a.push(limit(i));
-	}
-	return a;
+	if (n === 1) return [[]];
+	return [[], [limit(n-1)]];
 }
 
 function standardizePrSS(s) {
+	if (s.length == 0 || s[0] != 0) return s;
 	let siblings = [];
 	let current;
 	for (let i = 0; i < s.length; i++) {
