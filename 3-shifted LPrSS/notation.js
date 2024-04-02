@@ -14,42 +14,26 @@ class notation {
 	}
 
 	static expand(s, n) {
-		let a = [];
-		let last = s[s.length - 1];
-		
-		for (let i = 0; i < s.length - 1; i++) {
-			a.push(s[i]);
+		let out = [...s];
+		let cutNode = out.pop();
+
+		let k = out.findLastIndex(x => x < cutNode);
+		let j = out.findLastIndex((x, j) => x < cutNode && j < k);
+		let i = out.findLastIndex((x, i) => x < cutNode && i < j);
+		let increment = cutNode - s[i] - 1;
+
+		let rootIndex = i;
+		if (s[j] == s[i] && i == j-1) rootIndex = j;
+		if (s[k] == s[i] && i == k-2) rootIndex = k;
+
+		let badPart = out.slice(rootIndex);
+		for (let x = 1; x <= n; x++) {
+			out.push(...badPart.map(v => v + increment * x));
 		}
 
-		for (let k = s.length - 2; k >= 0; k--) {
-			if (s[k] < last) {
-				for (let j = k - 1; j >= 0; j--) {
-					if (s[j] < last) {
-						for (let i = j - 1; i >= 0; i--) {
-							if (s[i] < last) {
-								let increment = last - s[i] - 1;
-								let start = i;
-								if (s[j] == s[i] && i == j-1) start = j;
-								if (s[k] == s[i] && i == k-2) start = k;
-
-								for (let x = 1; x <= n; x++) {
-									for (let l = start; l < s.length - 1; l++) {
-										a.push(s[l] + increment * x);
-									}
-								}
-								break;
-							}
-						}
-						break;
-					}
-				}
-				break;
-			}
-		}
-
-		if (a.at(-1) === 0) a.pop(); // fixes limits of limits expanding into successors
-		if (a.at(-1) === 0) a.pop();
-		return a;
+		if (out.at(-1) === 0) out.pop(); // fix limits of limits expanding into successors
+		if (out.at(-1) === 0) out.pop();
+		return out;
 	}
 
 

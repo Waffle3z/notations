@@ -14,34 +14,20 @@ class notation {
 	}
 
 	static expand(s, n) {
-		let a = [];
-		let last = s[s.length - 1];
-		
-		for (let i = 0; i < s.length - 1; i++) {
-			a.push(s[i]);
+		let out = [...s];
+		let cutNode = out.pop();
+
+		let j = out.findLastIndex(x => x < cutNode);
+		let i = out.findLastIndex((x, i) => x < cutNode && i < j);
+		let increment = cutNode - s[i] - 1;
+
+		let badPart = out.slice((s[j] == s[i] && i == j - 1) ? j : i);
+		for (let x = 1; x <= n; x++) {
+			out.push(...badPart.map(v => v + increment * x));
 		}
 
-		for (let j = s.length - 2; j >= 0; j--) {
-			if (s[j] < last) {
-				for (let i = j - 1; i >= 0; i--) {
-					if (s[i] < last) {
-						let increment = last - s[i] - 1;
-						let start = (s[j] == s[i] && i == j - 1) ? j : i;
-
-						for (let x = 1; x <= n; x++) {
-							for (let k = start; k < s.length - 1; k++) {
-								a.push(s[k] + increment * x);
-							}
-						}
-						break;
-					}
-				}
-				break;
-			}
-		}
-
-		if (a.at(-1) === 0) a.pop(); // fixes limits of limits expanding into successors
-		return a;
+		if (out.at(-1) === 0) out.pop(); // fix limits of limits expanding into successors
+		return out;
 	}
 
 	static isSuccessor(array) {
