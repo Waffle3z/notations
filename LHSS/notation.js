@@ -14,7 +14,7 @@ class notation {
 		return [0, n+1];
 	}
 
-	// https://discord.com/channels/206932820206157824/925849203790458950/1225288098880028742
+	// https://discord.com/channels/206932820206157824/925849203790458950/1225522994609258688
 	static expand(M, n) {
 		if (M.length === 0) return [];
 		let out = [...M];
@@ -31,13 +31,14 @@ class notation {
 			if (r != p) {
 				let h = M.findLastIndex((x, i) => x > M[p] && i > r);
 				if (M.slice(r, h + 1) < M.slice(p)) {
+					r++;
 					break;
 				}
 			}
 			r--;
 		}
 		let badPart = out.slice(r);
-		if (badPart < [0,0,1]) badPart = [0];
+		if (badPart < Array(badPart.length+1).fill(0)) badPart = [0];
 		let increment = cutNode - M[r] - 1;
 		for (let i = 1; i <= n; i++) {
 			out.push(...badPart.map(j => j + increment * i));
