@@ -31,7 +31,7 @@ class notation {
 			if (r != p) {
 				let h = M.findLastIndex((x, i) => x > M[p] && i > r);
 				if (M.slice(r, h + 1) < M.slice(p)) {
-					r++;
+					if (M[r + 1] == M[r]) r++;
 					break;
 				}
 			}
