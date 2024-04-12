@@ -86,7 +86,7 @@ function notationFromString(s) {
 			notation.toString = notationToString;
 			notation.fromString = notationFromString;
 
-			let code = encodeURIComponent(source.value);
+			let code = encodeURIComponent(source.value).replace(/\(/g, '%28').replace(/\)/g, '%29');
 			window.history.replaceState(null, "Dynamic", `?custom=${code}`);
 		}
 
