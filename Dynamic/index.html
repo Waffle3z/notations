@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv='cache-control' content='no-cache'> 
+	<meta http-equiv='expires' content='0'> 
+	<meta http-equiv='pragma' content='no-cache'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../styles.css">
+</head>
+<body>
+	<div id="container">
+		<div id="tree">
+		</div>
+		<div>
+			<textarea id="source" spellcheck="false" style="width:calc(600px); height:calc(600px);">
+function lessOrEqual(a, b) {
+	for (let i = 0; i < a.length; i++) {
+		if (i >= b.length) return false;
+		if (a[i] != b[i]) return a[i] < b[i];
+	}
+	return a.length <= b.length;
+}
+
+function expandLimit(n) {
+	return [0, n+1];
+}
+
+function expand(a, n) {
+	let out = [...a];
+	let cutNode = out.pop();
+	let root = out.length-1;
+	while (out[root] >= cutNode && root > 0) root--;
+	let increment = cutNode - out[root] - 1;
+	let badPart = out.slice(root);
+	for (let i = 1; i < n; i++) {
+		out = out.concat(badPart.map(v => v + increment * i));
+	}
+	return out
+}
+
+function isSuccessor(array) {
+	return array.length == 0 || array.at(-1) == 0;
+}
+
+function notationToString(array) {
+	return JSON.stringify(array).slice(1,-1);
+}
+
+function notationFromString(s) {
+	return JSON.parse("["+s+"]");
+}</textarea>
+			<br>
+			<input id="update" value="Update" type="button" onclick="updateSource()"/>
+		</div>
+		<div id="settings">
+			<fieldset id="indentationContainer">
+				<legend>Indentation:</legend>
+				<div>
+					<input type="radio" id="expansion" value="expansion" name="indentation" checked />
+					<label for="expansion">Align recursive expansion</label>
+				</div>
+				<div>
+					<input type="radio" id="FS" value="FS" name="indentation" />
+					<label for="FS">Align fundamental sequence</label>
+				</div>
+				<div>
+					<input type="radio" id="noindent" value="noindent" name="indentation" />
+					<label for="noindent">None</label>
+				</div>
+			</fieldset>
+		</div>
+	</div>
+	<script>
+		class notation {
+			static title = "Dynamic";
+		}
+		let source = document.getElementById("source");
+		let update = document.getElementById("update");
+		function updateSource() {
+			eval(source.value);
+			notation.expand = expand;
+			notation.expandLimit = expandLimit;
+			notation.lessOrEqual = lessOrEqual;
+			notation.isSuccessor = isSuccessor;
+			notation.toString = notationToString;
+			notation.fromString = notationFromString;
+
+			let code = encodeURIComponent(source.value);
+			window.history.replaceState(null, "Dynamic", `?custom=${code}`);
+		}
+
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const customSource = urlParams.get("custom");
+		if (customSource != null) {
+			source.value = decodeURIComponent(customSource);
+		}
+		updateSource();
+	</script>
+	<script src="../main.js"></script>
+</body>
+</html>

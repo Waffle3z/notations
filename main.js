@@ -338,10 +338,14 @@ function initialize() {
 	});
 
 	document.addEventListener("click", (event) => {
-		selectedButton.focus();
+		if (event.target == document.getElementById("tree")) {
+			selectedButton.focus();
+		}
 	});
 
 	container.addEventListener("keydown", (event) => {
+		let tree = document.getElementById("tree");
+		if (event.target != tree && !tree.contains(event.target)) return;
 		if (event.key === "ArrowDown") {
 			event.preventDefault();
 			moveSelectionDown();
