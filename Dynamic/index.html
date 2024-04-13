@@ -29,14 +29,13 @@ function expandLimit(n) {
 function expand(a, n) {
 	let out = [...a];
 	let cutNode = out.pop();
-	let root = out.length-1;
-	while (out[root] >= cutNode && root > 0) root--;
-	let increment = cutNode - out[root] - 1;
-	let badPart = out.slice(root);
+	let rootIndex = out.findLastIndex(v => v < cutNode);
+	let increment = cutNode - out[rootIndex] - 1;
+	let badPart = out.slice(rootIndex);
 	for (let i = 1; i < n; i++) {
-		out = out.concat(badPart.map(v => v + increment * i));
+		out.push(...badPart.map(v => v + increment * i));
 	}
-	return out
+	return out;
 }
 
 function isSuccessor(array) {
@@ -44,7 +43,7 @@ function isSuccessor(array) {
 }
 
 function notationToString(array) {
-	return JSON.stringify(array).slice(1,-1);
+	return JSON.stringify(array).slice(1, -1);
 }
 
 function notationFromString(s) {
@@ -78,6 +77,18 @@ function notationFromString(s) {
 		let source = document.getElementById("source");
 		let update = document.getElementById("update");
 		function updateSource() {
+			// defaults
+			function lessOrEqual(a, b) {
+				for (let i = 0; i < a.length; i++) {
+					if (i >= b.length) return false;
+					if (a[i] != b[i]) return a[i] < b[i];
+				}
+				return a.length <= b.length;
+			}
+			function isSuccessor(array) { return array.length == 0 || array.at(-1) == 0; }
+			function notationToString(array) { return JSON.stringify(array).slice(1, -1); }
+			function notationFromString(s) { return JSON.parse("["+s+"]"); }
+
 			eval(source.value);
 			notation.expand = expand;
 			notation.expandLimit = expandLimit;
