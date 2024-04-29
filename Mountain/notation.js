@@ -11,9 +11,7 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		let a = [1];
-		for (let i = 0; i <= n; i++) a.push(a.at(-1) * 2);
-		return a;
+		return [1, n+2];
 	}
 
 	static expand(a, n) {
@@ -57,20 +55,12 @@ function arrayToRow(array, mode) {
 	});
 }
 
-function clampedValue(term) {
-	return Math.max(0, term.value);
-}
-
 function calcMountain(row) {
 	let mountain = [row];
 	while (true) {
 		let newRow = [];
 		for (let i = 0; i < row.length; i++) {
 			if (row[i].parentIndex != -1) {
-				let ancestry = [i];
-				while (row[ancestry.at(-1)].parentIndex != -1) {
-					ancestry.push(row[ancestry.at(-1)].parentIndex);
-				}
 				newRow.push({
 					value: row[i].delta,
 					position: row[i].position,
@@ -86,17 +76,9 @@ function calcMountain(row) {
 				if (p < 0) break;
 				let j = newRow.findIndex(x => x.position >= row[p].position);
 				if (j < 0 || (j < newRow.length-1 && newRow[j].position + 1 != newRow[j+1].position)) break;
-				if (clampedValue(newRow[j]) < clampedValue(newRow[i])) {
+				if (newRow[j].value < newRow[i].value) {
 					newRow[i].parentIndex = j;
-					let ancestors = [j];
-					while (true) {
-						let ancestor = newRow[ancestors.at(-1)].parentIndex;
-						if (ancestor == -1) break;
-						ancestors.push(ancestor);
-					}
-					let diff = clampedValue(newRow[i]) - clampedValue(newRow[j]);
-					newRow[i].parentIndex = ancestors[0];
-					newRow[i].delta = diff;
+					newRow[i].delta = newRow[i].value - newRow[j].value;
 					break;
 				}
 			}
@@ -133,9 +115,8 @@ function expand(mountain, n) {
 	} else {
 		let cutHeight = mountain.findLastIndex(row => row.at(-1).position == mountain[0].length - 1);
 		for (let i = 0; i <= cutHeight; i++) result[i].pop();
-		if (result.at(-1).length == 0) result.pop();
 
-		let badRootHeight = cutHeight - 1;
+		let badRootHeight = cutHeight;
 		let badRootRow = mountain[badRootHeight];
 
 		let cutNode = badRootRow.at(-1).value;
@@ -146,7 +127,7 @@ function expand(mountain, n) {
 		let row = result[badRootHeight];
 		for (let i = 1; i <= n; i++) {
 			row.push({
-				value: cutNode - 1,
+				value: (cutNode - 1) * (1 << (i - 1)),
 				position: badRootRow.at(-1).position + i - 1,
 				parentIndex: parentIndex + i - 1
 			});
