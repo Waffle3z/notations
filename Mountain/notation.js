@@ -116,15 +116,14 @@ function expand(mountain, n) {
 		let cutHeight = mountain.findLastIndex(row => row.at(-1).position == mountain[0].length - 1);
 		for (let i = 0; i <= cutHeight; i++) result[i].pop();
 
-		let badRootHeight = cutHeight;
-		let badRootRow = mountain[badRootHeight];
+		let badRootRow = mountain[cutHeight];
 
 		let cutNode = badRootRow.at(-1).value;
 		let parentIndex = badRootRow.at(-1).parentIndex;
 		while (parentIndex != -1 && badRootRow[parentIndex].value >= cutNode - 1) {
 			parentIndex = badRootRow[parentIndex].parentIndex;
 		}
-		let row = result[badRootHeight];
+		let row = result[cutHeight];
 		for (let i = 1; i <= n; i++) {
 			row.push({
 				value: (cutNode - 1) * (1 << (i - 1)),
@@ -132,15 +131,16 @@ function expand(mountain, n) {
 				parentIndex: parentIndex + i - 1
 			});
 		}
-		for (let k = badRootHeight - 1; k >= 0; k--) {
+		for (let k = cutHeight - 1; k >= 0; k--) {
 			let parent = mountain[k].at(-1).parentIndex;
-			for (let i = result[k].length; i <= result[k+1].length; i++) {
+			for (let p = result[k].at(-1).position + 1; p <= result[k+1].at(-1).position; p++) {
+				let difference = result[k+1].find(x => x.position == p).value;
 				result[k].push({
-					value: result[k][parent].value + result[k+1][i-1].value,
-					position: result[k][i-1].position + 1,
+					value: result[k][parent].value + difference,
+					position: result[k].at(-1).position + 1,
 					parentIndex: parent
 				});
-				parent = i;
+				parent = result[k].length - 1;
 			}
 		}
 		return calcMountain(arrayToRow(result[0].map(v => v.value)));
