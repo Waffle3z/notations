@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv='cache-control' content='no-cache'> 
+	<meta http-equiv='expires' content='0'> 
+	<meta http-equiv='pragma' content='no-cache'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../styles.css">
+	<link rel="stylesheet" type="text/css" href="styles.css">
+	<title>Mountain Viewer</title>
+</head>
+<body>
+	<h2>Mountain Viewer</h2>
+	<div style="display: flex">
+		<label for="sequenceInput">Sequence:</label>
+		<input type="text" id="sequenceInput" oninput="viewerDraw()">
+	</div>
+	<div style="display: flex">
+		<label for="expand"><button id="expandButton" onclick="onViewerExpand()">Expand</button></label>
+		<input type="text" id="expandInput" value="3" style="width:20px; text-align:center; margin-right: 5px" oninput="viewerDraw()">
+	</div>
+	<br>
+	<div style="display: flex">
+		<label for="textHeight">Text Height:</label>
+		<input type="range" id="textHeight" min="12" max="64" value="20" oninput="viewerDraw()">
+		<label for="lineSpacing">Line Spacing:</label>
+		<input type="range" id="lineSpacing" min="0" max="20" value="4" oninput="viewerDraw()">
+	</div>
+	<div style="display: flex">
+		<label for="rowWidth">Row Width:</label>
+		<input type="range" id="rowWidth" min="0" max="200" value="20" oninput="viewerDraw()">
+		<label for="rowHeight">Row Height:</label>
+		<input type="range" id="rowHeight" min="0" max="200" value="20" oninput="viewerDraw()">
+	</div>
+	<br>
+	<canvas id="canvas" style="border:2px solid #aaa;"></canvas>
+	<br>
+	<canvas id="canvas2" style="border:2px solid #aaa;"></canvas>
+
+	<script src="notation.js"></script>
+	<script src="../mountain.js"></script>
+	<script>
+		function viewerDraw() {
+			viewerUpdateConfig();
+			let mountain = getMountain();
+			drawMountain(canvas, mountain);
+			let n = parseInt(expandInput.value) || 0;
+			let expanded = expand(mountain, n);
+			drawMountain(canvas2, expanded);
+		}
+
+		function onViewerExpand() {
+			let mountain = getMountain();
+			let n = parseInt(expandInput.value) || 0;
+			let array = expand(mountain, n)[0].map(v => v.value).slice(0,1000);
+			textInput.value = array.join(",");
+			viewerDraw();
+		}
+
+		viewerInitialize({
+			onViewerExpand: onViewerExpand
+		});
+
+		function getMountain() {
+			let inputText = textInput.value;
+			if (inputText.length == 0) inputText = "0";
+			let sequence = JSON.parse("["+inputText.match(/[0-9,]*[0-9]/)+"]");
+			let mountain = calcMountain(arrayToRow(sequence));
+			if (mountain.at(-1).length == 0) mountain.pop();
+			return mountain;
+		}
+
+		textInput.value = "0,1,4,11,26";
+		viewerDraw();
+	</script>
+
+	<div id="footer">
+		<a href="../Weak Ancestral Mountain/">Explorer</a> | 
+		<a href="../">Index</a>
+	</div>
+</body>
+</html>
