@@ -50,20 +50,6 @@ class notation {
 			if (next == s) break;
 			s = next;
 		}
-		s = s.replaceAll(/\[[0-9,]+\]/g, function(x) {
-			return PrSStoCNF(JSON.parse(x));
-		});
-		s = s.replaceAll("[0,1,ω]", "ε₀");
-		s = s.replaceAll("[0,1,ω,0]", "ε₀+1");
-		s = s.replaceAll("[0,1,ω,1]", "ε₀·ω");
-		s = s.replaceAll("[0,1,ω,2]", "ε₀^ω");
-		s = s.replaceAll("[0,1,ω,ω]", "ε₁");
-		s = s.replaceAll("[0,1,ω,ω,ω]", "ε₂");
-		s = s.replaceAll("[0,1,ω,ω+1]", "ε_ω");
-		s = s.replaceAll("[0,1,ω,ω^2]", "ζ₀");
-		s = s.replaceAll("[0,1,ω,ω^ω]", "ψ₀(Ω₂)");
-		s = s.replaceAll("[0,1,ω,ε₀]", "ψ₀(Ω_ω)");
-		s = s.replaceAll("[0,1,ω,ε₀,ε₀]", "ψ₀(Ω_ω·2)");
 		return s;
 	}
 };
