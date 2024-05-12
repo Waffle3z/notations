@@ -1,7 +1,7 @@
 class notation {
 	static title = "BrSS";
 	static header = "Bracket Sequence System";
-	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1218367946498506753'>Definition</a> by tb148 / 貓娘 “Catgirl” (v1.2.1)";
+	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1238812305727164487'>Definition</a> by ghoqyew / 九尾狐 “Nine-Tailed Fox” (v2.0.0b1)";
 
 	static lessOrEqual(a, b) {
 		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) <= notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
@@ -74,28 +74,32 @@ function isPrefix(x, y) {
 }
 
 function replaceable(x, y) {
-	if (x.length === 0 || y[y.length - 1].length === 0) return true;
+	if (y[y.length - 1].length === 0) return [true, y.length - x.length - 1];
+	if (x.length === 0) return [false, 0];
 	for (let i = x.length; i < y.length; i++) {
-		if (!isPrefix(x[x.length - 1], y[i])) return false;
+		if (!isPrefix(x[x.length - 1], y[i])) return [false, 0];
 	}
 	return replaceable(x[x.length - 1], y[y.length - 1]);
 }
 
-function replacePrefix(a, x, y) {
-	if (x.length !== 0 && !isPrefix(x, a)) return a;
+function insertPrefix(a, x) {
+	return x.concat(a.map(b => insertPrefix(b, x)));
+}
+
+function replacePrefix(a, x, y, z) {
 	let b = y;
 	let flag = true;
 	for (let i = x.length; i < a.length; i++) {
 		let c = a[i];
 		if (x.length === 0) {
-			c = replacePrefix(c, x, y);
+			c = insertPrefix(c, z);
 		} else if (flag && isPrefix(x[x.length - 1], c)) {
-			c = replacePrefix(c, x[x.length - 1], y[y.length - 1]);
+			c = replacePrefix(c, x[x.length - 1], y[y.length - 1], z);
 		} else {
 			flag = false;
 		}
 		b = b.concat([c]);
-	}	
+	}
 	return b;
 }
 
@@ -108,12 +112,23 @@ function decrement(a) {
 
 function expand(a, n) {
 	if (a.length === 0) return [];
-	let k = a.findLastIndex((_, i) => replaceable(a.slice(0, i), a));
-	const x = k == -1 ? [] : a.slice(0, k);
+	let l = 0;
+	let k = a.findLastIndex((_, i) => {
+		let res = replaceable(a.slice(0, i), a);
+		if (res[0]) {
+			l = res[1];
+			return true;
+		}
+	});
+	if (k == -1) {
+		return a.slice(0, -1).concat([expand(a.at(-1), n)]);
+	}
+	const x = a.slice(0, k);
 	const y = decrement(a);
+	const z = Array(l).fill([]);
 	let b = y;
 	for (let i = 0; i < n; i++) {
-		b = replacePrefix(b, x, y);
+		b = replacePrefix(b, x, y, z);
 	}
 	if (notation.isSuccessor(b)) b.pop();
 	return b;
@@ -121,15 +136,11 @@ function expand(a, n) {
 
 function limit(n) {
 	if (n === 0) return [];
-	return [[], new Array(n).fill([])];
+	return [[], Array(n).fill([])];
 }
 
-function count(a) {
-	return a.reduce((acc, x) => acc + count(x), 1);
-}
-
-function numeric(a) {
-	return a.map(x => count(x)).join(',');
+function numeric(a, n=0) {
+	return [n].concat(...a.map(x => numeric(x, n + 1)));
 }
 
 function PrSStoCNF(s) {
