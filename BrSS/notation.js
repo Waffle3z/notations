@@ -1,7 +1,7 @@
 class notation {
 	static title = "BrSS";
 	static header = "Bracket Sequence System";
-	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1238812305727164487'>Definition</a> by ghoqyew / 九尾狐 “Nine-Tailed Fox” (v2.0.0b1)";
+	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1242356040209530910'>Definition</a> by ghoqyew / 九尾狐 (v2.0.0)";
 
 	static lessOrEqual(a, b) {
 		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) <= notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
@@ -31,19 +31,8 @@ class notation {
 	static convertToNotation(value) {
 		if (settings.notation == "Numeric") return numeric(notation.fromString(value));
 		if (settings.notation == "Brackets") return value;
-		if (settings.notation == "Hydra") {
-			let list = [];
-			let balance = 0;
-			for (let i = 0; i < value.length; i++) {
-				if (value[i] == "[") {
-					list.push(balance);
-					balance++;
-				} else {
-					balance--;
-				}
-			}
-			return "(" + list.join(")(") + ")";
-		}
+		if (settings.notation == "Hydra") return hydra(notation.fromString(value));
+		if (settings.notation == "why") return why(notation.fromString(value));
 		let s = value.replaceAll(/\]\[/g,"],[").replaceAll(/\[\]/g,"0");
 		while (true) {
 			let next = s.replaceAll(/\[([0,]+)\]/g,(_, n) => `${(n.length+1)/2}`);
@@ -54,18 +43,18 @@ class notation {
 	}
 };
 
-// y begins with all of the same elements as x
-function isPrefix(x, y) {
-	return x.length < y.length && notation.toString(y.slice(0, x.length)) === notation.toString(x);
+// a begins with all of the same elements as x
+function isPrefix(a, x) {
+	return x.length < a.length && notation.toString(a.slice(0, x.length)) === notation.toString(x);
 }
 
-function replaceable(x, y) {
-	if (y[y.length - 1].length === 0) return [true, y.length - x.length - 1];
+function replaceable(a, x) {
+	if (a[a.length - 1].length === 0) return [true, a.length - x.length - 1];
 	if (x.length === 0) return [false, 0];
-	for (let i = x.length; i < y.length; i++) {
-		if (!isPrefix(x[x.length - 1], y[i])) return [false, 0];
+	for (const b of a.slice(x.length)) {
+		if (!isPrefix(b, x[x.length - 1])) return [false, 0];
 	}
-	return replaceable(x[x.length - 1], y[y.length - 1]);
+	return replaceable(a[a.length - 1], x[x.length - 1]);
 }
 
 function insertPrefix(a, x) {
@@ -73,20 +62,19 @@ function insertPrefix(a, x) {
 }
 
 function replacePrefix(a, x, y, z) {
-	let b = y;
+	let c = [...y];
 	let flag = true;
-	for (let i = x.length; i < a.length; i++) {
-		let c = a[i];
+	for (const b of a.slice(x.length)) {
 		if (x.length === 0) {
-			c = insertPrefix(c, z);
-		} else if (flag && isPrefix(x[x.length - 1], c)) {
-			c = replacePrefix(c, x[x.length - 1], y[y.length - 1], z);
+			c.push(replacePrefix(b, x, z, z));
+		} else if (flag && isPrefix(b, x[x.length - 1])) {
+			c.push(replacePrefix(b, x[x.length - 1], y[y.length - 1], z));
 		} else {
+			c.push(b);
 			flag = false;
 		}
-		b = b.concat([c]);
 	}
-	return b;
+	return c;
 }
 
 // remove the rightmost []
@@ -100,24 +88,21 @@ function expand(a, n) {
 	if (a.length === 0) return [];
 	let l = 0;
 	let k = a.findLastIndex((_, i) => {
-		let res = replaceable(a.slice(0, i), a);
+		let res = replaceable(a, a.slice(0, i));
 		if (res[0]) {
 			l = res[1];
 			return true;
 		}
 	});
-	if (k == -1) {
-		return a.slice(0, -1).concat([expand(a.at(-1), n)]);
-	}
 	const x = a.slice(0, k);
 	const y = decrement(a);
 	const z = Array(l).fill([]);
-	let b = y;
+	let c = y;
 	for (let i = 0; i < n; i++) {
-		b = replacePrefix(b, x, y, z);
+		c = replacePrefix(c, x, y, z);
 	}
-	if (notation.isSuccessor(b)) b.pop();
-	return b;
+	if (notation.isSuccessor(c)) c.pop();
+	return c;
 }
 
 function limit(n) {
@@ -126,8 +111,21 @@ function limit(n) {
 }
 
 function numeric(a, n=0) {
-	return [n].concat(...a.map(x => numeric(x, n + 1)));
+	return [n].concat(...a.map(b => numeric(b, n + 1)));
 }
+
+function hydra(a) {
+    return numeric(a).map(i => `(${i})`).join('');
+}
+
+function count(a) {
+    return 1 + a.reduce((sum, b) => sum + count(b), 0);
+}
+
+function why(a) {
+    return a.map(b => String(count(b))).join(',');
+}
+
 
 function PrSStoCNF(s) {
 	let out = "";
