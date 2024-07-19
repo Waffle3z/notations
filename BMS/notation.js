@@ -60,12 +60,7 @@ class notation {
 	static isSuccessor(matrix) {
 		const lastColumn = matrix[matrix.length - 1];
 		if (lastColumn) {
-			for (let i = 0; i < lastColumn.length; i++) {
-				if (lastColumn[i] !== 0) {
-					return false;
-				}
-			}
-			return true;
+			return !lastColumn.find(x => x != 0);
 		}
 	}
 
@@ -81,42 +76,31 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		let s = "("+Array(n+1).fill(0).join(",")+")("+Array(n+1).fill(1).join(",")+")";
+		let s = "(" + Array(n+1).fill(0).join(",") + ")(" + Array(n+1).fill(1).join(",") + ")";
 		return this.fromString(s);
 	}
 
 	static expand(matrix, n) {
-		const lastColumn = matrix[matrix.length - 1];
+		const lastColumn = matrix.at(-1);
 		if (!lastColumn) return [];
-		let L, Li;
-		for (let i = lastColumn.length - 1; i >= 0; i--) {
-			if (lastColumn[i] !== 0) {
-				L = lastColumn[i];
-				Li = i;
-				break;
-			}
-		}
+		const Li = lastColumn.findLastIndex(L => L != 0);
 		const newMatrix = matrix.map(row => [...row]);
-		if (!L || n == 0) {
+		if (Li == -1 || n == 0) {
 			newMatrix.pop();
 			return matrixReduce(newMatrix);
 		}
+		const L = lastColumn[Li];
 		for (let i = Li; i < lastColumn.length; i++) {
-			if (newMatrix[newMatrix.length - L - 1][i] !== 0) {
-				newMatrix[newMatrix.length - 1][i] = newMatrix[newMatrix.length - L - 1][i] + L;
+			if (newMatrix.at(-L-1)[i] !== 0) {
+				newMatrix.at(-1)[i] = newMatrix.at(-L-1)[i] + L;
 			} else {
-				newMatrix[newMatrix.length - 1][i] = 0;
+				newMatrix.at(-1)[i] = 0;
 			}
 		}
 		const badPart = newMatrix.slice(-L);
 		for (let i = 1; i < n; i++) {
 			for (let j = 0; j < badPart.length; j++) {
-				const column = [...badPart[j]];
-				for (let k = 0; k < column.length; k++) {
-					if (column[k] > j + 1) {
-						column[k] += L * i;
-					}
-				}
+				const column = badPart[j].map(v => v > j+1 ? v + L*i : v)
 				newMatrix.push(column);
 			}
 		}
@@ -154,15 +138,7 @@ class notation {
 };
 
 function PMStoAMS(matrix) {
-	let newMatrix = [];
-	for (let i = 0; i < matrix.length; i++) {
-		let newRow = [];
-		for (let j = 0; j < matrix[i].length; j++) {
-			newRow[j] = matrix[i][j] == 0 ? 0 : i + 1 - matrix[i][j];
-		}
-		newMatrix[i] = newRow;
-	}
-	return newMatrix;
+	return matrix.map((row, i) => row.map(v => v == 0 ? 0 : i + 1 - v));
 }
 
 function PMStoBMS(matrix) {

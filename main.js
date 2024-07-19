@@ -352,7 +352,7 @@ function initialize() {
 		} else if (event.key === "ArrowUp") {
 			event.preventDefault();
 			moveSelectionUp();
-		} else if (event.key === "Backspace") {
+		} else if (event.key === "Backspace" || event.key === "ArrowLeft") {
 			event.preventDefault();
 			if (!unexpandButton(selectedButton)) {
 				moveSelectionUp();
@@ -360,7 +360,7 @@ function initialize() {
 		} else if (event.key === "Enter") {
 			event.preventDefault();
 			expandButtonRecursively(selectedButton);
-		} else if (event.key === " ") {
+		} else if (event.key === " " || event.key === "ArrowRight") {
 			event.preventDefault();
 			expandButton(selectedButton);
 		}
