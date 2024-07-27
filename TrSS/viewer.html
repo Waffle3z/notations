@@ -49,10 +49,11 @@
 			let mountain = calcMountain(sequence);
 			drawMountain(canvas, mountain);
 			let n = parseInt(expandInput.value) || 0;
-			let mountain2 = calcMountain(flatten(notation.expand(sequence, n)));
+			let sequence2 = flatten(notation.expand(sequence, n));
+			let mountain2 = calcMountain(sequence2);
 			drawMountain(canvas2, mountain2);
-			document.getElementById("matrix").innerText = toMatrixString(mountain);
-			document.getElementById("matrix2").innerText = toMatrixString(mountain2);
+			document.getElementById("matrix").innerText = toMatrixString(sequence);
+			document.getElementById("matrix2").innerText = toMatrixString(sequence2);
 		}
 
 		function onViewerExpand() {
@@ -96,14 +97,6 @@
 				}
 			});
 			return [row0, row1];
-		}
-
-		function toMatrixString(mountain) {
-			let matrix = mountain[0].map((v, i) => {
-				let diff = v.parentIndex == -1 ? 0 : v.value - mountain[0][v.parentIndex].value - 1;
-				return [v.numAncestors, diff];
-			});
-			return matrix.map(v => `(${v[0]},${v[1]})`).join("").replaceAll(/,0\)/g,")");
 		}
 
 		textInput.value = "0,1,3,5";

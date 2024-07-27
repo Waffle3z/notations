@@ -99,19 +99,41 @@ class notation {
 
 	static convertToNotation(value) {
 		let tree = notation.fromString(value);
-		if (!settings.advanced) {
-			return flatten(tree).join(",");
-		}
-		return value;
+		if (settings.notation == "Sequence") return flatten(tree).join(",");
+		if (settings.notation == "Pairs") return toMatrixString(flatten(tree));
+		return value; // Grouped
 	}
 };
 
-settings.advanced = true;
+function toMatrixString(sequence) {
+	let row = sequence.map((v, i) => {
+		return {value: v, position: i, parentIndex: sequence.findLastIndex((x, j) => x < v && j < i)};
+	});
+	return row.map((v, i) => {
+		let numAncestors = 0;
+		let current = i;
+		while (true) {
+			current = row[current].parentIndex;
+			if (current == -1) break;
+			numAncestors++;
+		}
+		let diff = v.parentIndex == -1 ? 0 : v.value - row[v.parentIndex].value - 1;
+		return `(${numAncestors},${diff})`;
+	}).join("").replaceAll(/,0\)/g,")");
+}
+
+function setNotation(newNotation) {
+	settings.notation = newNotation;
+	refreshTerms();
+}
 
 document.addEventListener("DOMContentLoaded", () => {
-	const advancedCheckbox = document.getElementById("advanced");
-	advancedCheckbox.addEventListener('change', function() {
-		settings.advanced = advancedCheckbox.checked;
-		refreshTerms();
-	});
+	if (document.getElementById("notationContainer")) {
+		document.querySelectorAll('input[name="notation"]').forEach(function(radioInput) {
+			radioInput.addEventListener('change', function() {
+				setNotation(radioInput.value);
+			});
+		});
+		setNotation("Sequence");
+	}
 });
