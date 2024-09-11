@@ -29,10 +29,10 @@ class notation {
 			return out;
 		}
 		let parentDifference = cutNode - a[ancestry[1]];
-		let delta = parentDifference - ancestry.length + 1;
+		let delta = Math.max(0, parentDifference - ancestry.length + 1);
 		if (delta == 0) {
-			let root = ancestry[parentDifference];
-			let increment = cutNode - a[root] - 1;
+			let root = a[ancestry[1]];
+			let increment = parentDifference - 1;
 			for (let i = 1; i <= n; i++) {
 				out.push(root + increment * i);
 			}
