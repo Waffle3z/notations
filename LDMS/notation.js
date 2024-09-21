@@ -28,8 +28,9 @@ class notation {
 		if (n == 0 || cutNode.length == 0) {
 			return newMatrix;
 		}
-		const rootIndex = newMatrix.findLastIndex(row => {
+		const rootIndex = newMatrix.findLastIndex((row, i) => {
 			if (!(row < cutNode)) return false;
+			if (newMatrix.find((row2, j) => j > i && row2 < row)) return false;
 			return cutNode.at(-1) > (row[cutNode.length-1] || 0);
 		});
 		let rootNode = newMatrix[rootIndex];
