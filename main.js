@@ -337,32 +337,39 @@ function initialize() {
 		}
 	});
 
-	document.addEventListener("click", (event) => {
-		if (event.target == document.getElementById("tree")) {
+	document.addEventListener("mouseup", (event) => {
+		const tree = document.getElementById("tree");
+		if (tree.contains(event.target) || event.target == document.body) {
 			selectedButton.focus();
 		}
 	});
 
-	container.addEventListener("keydown", (event) => {
-		let tree = document.getElementById("tree");
-		if (event.target != tree && !tree.contains(event.target)) return;
+	document.addEventListener("keydown", (event) => {
+		const tree = document.getElementById("tree");
+		if (event.target != tree && event.target != document.body && !tree.contains(event.target)) return;
+
+		let handled = true;
 		if (event.key === "ArrowDown") {
-			event.preventDefault();
 			moveSelectionDown();
 		} else if (event.key === "ArrowUp") {
-			event.preventDefault();
 			moveSelectionUp();
-		} else if (event.key === "Backspace" || event.key === "ArrowLeft") {
-			event.preventDefault();
+		} else if (event.key === "Backspace" || event.key === "ArrowLeft") { // unexpand
 			if (!unexpandButton(selectedButton)) {
-				moveSelectionUp();
+				moveSelectionUp(); // move up if there was nothing to unexpand
 			}
-		} else if (event.key === "Enter") {
-			event.preventDefault();
+		} else if (event.key === "Enter") { // expand recursively
 			expandButtonRecursively(selectedButton);
-		} else if (event.key === " " || event.key === "ArrowRight") {
-			event.preventDefault();
+		} else if (event.key === " ") { // expand once
 			expandButton(selectedButton);
+		} else if (event.key === "ArrowRight") { // expand and move selection down
+			expandButton(selectedButton);
+			moveSelectionDown();
+		} else {
+			handled = false;
+		}
+
+		if (handled) {
+			event.preventDefault();
 		}
 	});
 }
