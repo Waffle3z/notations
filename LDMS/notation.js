@@ -29,10 +29,8 @@ class notation {
 			return newMatrix;
 		}
 		const rootIndex = newMatrix.findLastIndex(row => {
-			for (let i = 0; i < cutNode.length; i++) {
-				if ((row[i] || 0) >= cutNode[i]) return false;
-			}
-			return true;
+			if (!(row < cutNode)) return false;
+			return cutNode.at(-1) > (row[cutNode.length-1] || 0);
 		});
 		let rootNode = newMatrix[rootIndex];
 		const badPart = newMatrix.slice(rootIndex);
