@@ -44,7 +44,7 @@ class notation {
 					return v + increment * i;
 				});
 				let offset = cutNode.at(-1) - (rootNode.at(cutNode.length-1) || 0);
-				if ((cutNode.length > rootNode.length && cutNode.at(-1) > 1) || delta > 1) {
+				if ((cutNode.length > rootNode.length && cutNode.at(-1) > 1) || (cutNode.at(-1) - (row.at(cutNode.length-1) || 0) > 1)) {
 					for (let b = 0; b < i; b++) {
 						newRow.push((offset - 1) * (i - b));
 					}
