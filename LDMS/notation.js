@@ -1,3 +1,11 @@
+function arrayLessThan(a, b) {
+	for (let i = 0; i < a.length; i++) {
+		if (a[i] < (b[i] || 0)) return true;
+		if (a[i] > (b[i] || 0)) return false;
+	}
+	return b.length > a.length;
+}
+
 class notation {
 	static title = "LDMS";
 	static header = "Large Descending Matrix System";
@@ -29,7 +37,7 @@ class notation {
 			return newMatrix;
 		}
 		const rootIndex = newMatrix.findLastIndex((row, i) => {
-			if (!(row < cutNode)) return false;
+			if (!arrayLessThan(row, cutNode)) return false;
 			if (newMatrix.find((row2, j) => j > i && row2 < row)) return false;
 			return cutNode.at(-1) > (row[cutNode.length-1] || 0);
 		});
