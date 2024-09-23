@@ -41,17 +41,14 @@ class notation {
 		const delta = cutNode.at(-1) - (rootNode.at(cutNode.length-1) || 0);
 		for (let i = 1; i < n; i++) {
 			newMatrix.push(...badPart.map(row => {
-				let newRow = row.map((v, j) => {
+				const newRow = row.map((v, j) => {
 					let increment = Math.max(0, (cutNode[j] || 0) - (rootNode[j] || 0) - (j == cutNode.length-1 ? 1 : 0));
-					if (delta > 1 && cutNode.length < row.length) increment = delta-1;
+					if (delta > 1 && cutNode.length < row.length) increment = delta - 1;
 					return v + increment * i;
 				});
-				let offset = cutNode.at(-1) - (rootNode.at(cutNode.length-1) || 0);
-				if ((cutNode.length > rootNode.length && cutNode.at(-1) > 1) || (cutNode.at(-1) - (row.at(cutNode.length-1) || 0) > 1)) {
-					if (offset > 1) {
-						for (let b = 0; b < i; b++) {
-							newRow.push((offset - 1) * (i - b));
-						}
+				if (delta > 1) {
+					for (let b = 0; b < i; b++) {
+						newRow.push((delta - 1) * (i - b));
 					}
 				}
 				return newRow;
