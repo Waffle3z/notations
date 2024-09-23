@@ -110,7 +110,7 @@ function cloneMountain(mountain) {
 
 function expand(mountain, n) {
 	let result = cloneMountain(mountain);
-	if (mountain[0].at(-1).parentIndex == -1) {
+	if (mountain[0].at(-1).parentIndex == -1 || n == 0) {
 		result[0].pop();
 	} else {
 		let cutHeight = mountain.findLastIndex(row => row.at(-1).position == mountain[0].length - 1);
