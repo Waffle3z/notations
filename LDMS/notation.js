@@ -1,9 +1,8 @@
-function arrayLessThan(a, b) {
-	for (let i = 0; i < a.length; i++) {
-		if (a[i] < (b[i] || 0)) return true;
-		if (a[i] > (b[i] || 0)) return false;
+function arrayCompare(a, b) { // -1 if a < b, 0 if a == b, 1 if a > b
+	for (let i = 0; i < Math.max(a.length, b.length); i++) {
+		if (a[i] != b[i]) return (a[i] || 0) < (b[i] || 0) ? -1 : 1;
 	}
-	return b.length > a.length;
+	return a.length < b.length ? -1 : a.length == b.length ? 0 : 1
 }
 
 class notation {
@@ -11,16 +10,12 @@ class notation {
 	static header = "Large Descending Matrix System";
 
 	static lessOrEqual(a, b) {
-		if (a.length == 0) return b.length > 0;
-		if (b.length == 0) return false;
-		if (a[0].length != b[0].length) return a[0].length < b[0].length;
 		for (let i = 0; i < a.length; i++) {
 			if (i >= b.length) return false;
-			for (let j = 0; j < Math.max(a[i].length, b[i].length); j++) {
-				if (a[i][j] != b[i][j]) return (a[i][j] || 0) < (b[i][j] || 0);
-			}
+			const compare = arrayCompare(a[i], b[i]);
+			if (compare != 0) return compare < 0;
 		}
-		return b.length >= a.length;
+		return a.length <= b.length;
 	}
 
 	static expandLimit(n) {
@@ -37,8 +32,8 @@ class notation {
 			return newMatrix;
 		}
 		const rootIndex = newMatrix.findLastIndex((row, i) => {
-			if (!arrayLessThan(row, cutNode)) return false;
-			if (newMatrix.find((row2, j) => j > i && row2 < row)) return false;
+			if (arrayCompare(cutNode, row) <= 0) return false;
+			if (newMatrix.find((row2, j) => j > i && arrayCompare(row, row2) == 1)) return false;
 			return cutNode.at(-1) > (row[cutNode.length-1] || 0);
 		});
 		let rootNode = newMatrix[rootIndex];
