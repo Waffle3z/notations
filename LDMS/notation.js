@@ -46,9 +46,10 @@ class notation {
 					if (delta > 1 && cutNode.length < row.length) increment = delta - 1;
 					return v + increment * i;
 				});
-				if (delta > 1) {
+				const offset = cutNode.at(-1) - (row.at(cutNode.length-1) || 0);
+				if (offset > 1) {
 					for (let b = 0; b < i; b++) {
-						newRow.push((delta - 1) * (i - b));
+						newRow.push((offset - 1) * (i - b));
 					}
 				}
 				return newRow;
