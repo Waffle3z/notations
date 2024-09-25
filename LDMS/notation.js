@@ -47,7 +47,7 @@ class notation {
 					return v + increment * i;
 				});
 				const offset = cutNode.at(-1) - (row.at(cutNode.length-1) || 0);
-				if (offset > 1) {
+				if (offset > 1 && arrayCompare(row, cutNode) == -1) {
 					for (let b = 0; b < i; b++) {
 						newRow.push((offset - 1) * (i - b));
 					}
