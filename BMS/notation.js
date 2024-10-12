@@ -122,6 +122,19 @@ class notation {
 		if (settings.notation == "0Y") {
 			matrix = PMSto0Y(matrix);
 			str = matrix.join(",");
+		} else if (settings.notation == "VZ") {
+			matrix = matrixSimplify(PMStoBMS(matrix));
+			let sequence = [];
+
+			for (let term of matrix) {
+				let v = term[0] + 1;
+				sequence.push(v);
+				for (let i = 1; i < term.length; i++) {
+					sequence.push(v + term[i] + 1);
+				}
+			}
+
+			str = sequence.join(",");
 		} else {
 			str = notation.toString(settings.simplify ? matrixSimplify(matrix) : matrix);
 		}
