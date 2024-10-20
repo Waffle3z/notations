@@ -1,7 +1,7 @@
 class notation {
 	static title = "BrSS";
 	static header = "Bracket Sequence System";
-	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1242356040209530910'>Definition</a> by ghoqyew / 九尾狐 (v2.0.0)";
+	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1242356040209530910'>Definition</a> by tb148 (v2.0.0)";
 
 	static lessOrEqual(a, b) {
 		return notation.toString(a).replaceAll(/./g, c => c == "[" ? 1 : 0) <= notation.toString(b).replaceAll(/./g, c => c == "[" ? 1 : 0);
