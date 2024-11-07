@@ -66,8 +66,6 @@ class notation {
 		s = s.replaceAll("[0,1,ω,ω^2]", "ζ₀");
 		s = s.replaceAll("[0,1,ω,ω^2,ω^3]", "η₀");
 		s = s.replaceAll("[0,1,ω,ω^ω]", "φ(ω,0)");
-		s = s.replaceAll("[1]", "Ω");
-		s = s.replaceAll("[2]", "Ω₂");
 		return s;
 	}
 };
@@ -91,22 +89,8 @@ function expand(a, n) {
 	let str = toString(a);
 	let out = [...a];
 	let cutNode = out.pop();
+	let isLimit = !notation.isSuccessor(cutNode);
 
-	if (notation.lessOrEqual([[[]]], cutNode)) { // Ω
-		if (!notation.isSuccessor(cutNode[0])) {
-			out.push([notation.expand(cutNode[0], n)])
-			return out;
-		}
-		let previous = [cutNode[0].slice(0, -1)];
-		if (cutNode[0].length == 1) previous = [];
-		let b = [[]];
-		if (previous.length != 0) b.push(previous);
-		for (let i = 0; i < n; i++) {
-			b.push([...b]);
-		}
-		out.push(...b.slice(1));
-		return out;
-	}
 	if (str === "0,1") return Array(n).fill([]);
 	if (n == 0) {
 		for (let i = a.length - 2; i >= 0; i--) { // cut the last nondecreasing sequence
@@ -120,13 +104,15 @@ function expand(a, n) {
 	let rootIndex = out.findLastIndex(v => notation.lessThan(v, cutNode));
 	let root = out[rootIndex];
 
-	if (!notation.isSuccessor(cutNode)) { // sequence ends in a limit
+	if (isLimit) { // sequence ends in a limit
+		let copyPart = [...out.slice(rootIndex+1)];
 		let index = 0;
 		while (notation.lessOrEqual(expand(cutNode, index), root)) {
 			index++;
 		}
 		for (let i = index; i < index + n; i++) {
 			out.push(expand(cutNode, i));
+			out.push(...copyPart);
 		}
 		return out;
 	}
@@ -145,7 +131,9 @@ function expand(a, n) {
 function limit(n) {
 	if (n === 0) return [];
 	if (n === 1) return [[]];
-	return [[], [limit(n-1)]];
+	let out = [];
+	for (let i = 0; i < n; i++) out.push(limit(i));
+	return out;
 }
 
 function standardizePrSS(s) {
