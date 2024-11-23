@@ -27,7 +27,7 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		return bigLimit(n+1);
+		return limit(n+1);
 	}
 
 	static expand(a, n) {
@@ -72,7 +72,12 @@ class notation {
 		s = s.replaceAll("[0,1,3]", "ε₀");
 		s = s.replaceAll("[0,1,4]", "ζ₀");
 		s = s.replaceAll("[0,1,5]", "η₀");
-		s = s.replaceAll("[0,1,ω]", "φ(ω,0)");
+		if (version == "1.2") {
+			s = s.replaceAll("[0,1,ω]", "ε₀");
+			s = s.replaceAll("[0,1,ω,ε₀]", "φ(ε₀,0)");
+		} else {
+			s = s.replaceAll("[0,1,ω]", "φ(ω,0)");
+		}
 		return s;
 	}
 };
@@ -169,7 +174,8 @@ function expand(a, n) {
 	}
 	let out = [...a];
 	let cutNode = out.pop();
-	if (!notation.isSuccessor(cutNode)) {
+	let cutIsSuccessor = notation.isSuccessor(cutNode);
+	if (!cutIsSuccessor && version != "1.2") {
 		if (version == "1.1") {
 			out.push(expand(cutNode, n-1));
 		} else {
@@ -178,31 +184,37 @@ function expand(a, n) {
 		return cacheResult(hash, out);
 	}
 
-	let predecessor = decrement(cutNode);
+	let parent = cutNode;
+	let increment = 1;
 	let rootIndex = out.findLastIndex(v => notation.lessThan(v, cutNode));
 	let root = out[rootIndex];
-	let badPart = [predecessor, ...out.slice(rootIndex + 1)];
-	if (notation.equal(root, predecessor)) { // cut node == root + 1
-		let zeroth = [...out];
-		if (notation.isSuccessor(zeroth)) zeroth.pop();
-		let begin = notation.equal(zeroth, expand(a, 0)) ? 0 : 1;
-		for (let i = begin; i < n; i++) {
-			out.push(...badPart);
+	let badPart = [...out.slice(rootIndex)];
+	if (cutIsSuccessor) {
+		let predecessor = decrement(cutNode);
+		badPart = [predecessor, ...out.slice(rootIndex + 1)];
+		if (notation.equal(root, predecessor)) { // cut node == root + 1
+			let zeroth = [...out];
+			if (notation.isSuccessor(zeroth)) zeroth.pop();
+			let begin = notation.equal(zeroth, expand(a, 0)) ? 0 : 1;
+			for (let i = begin; i < n; i++) {
+				out.push(...badPart);
+			}
+			if (notation.isSuccessor(out)) out.pop();
+			return cacheResult(hash, out);
 		}
-		if (notation.isSuccessor(out)) out.pop();
-		return cacheResult(hash, out);
-	}
 
-	let parent = searchForParent(root, predecessor);
-	let indexRoot = findPrefixInExpansion(root, parent)[1];
-	let indexPredecessor = findPrefixInExpansion(predecessor, parent)[1];
-	let increment = indexPredecessor - indexRoot;
+		parent = searchForParent(root, predecessor);
+		let indexRoot = findPrefixInExpansion(root, parent)[1];
+		let indexPredecessor = findPrefixInExpansion(predecessor, parent)[1];
+		increment = indexPredecessor - indexRoot;
+	}
 	for (let i = 1; i <= n; i++) {
 		// for each element in the bad part, if it's in the parent then move the index and copy the suffix
 		let copy = [...badPart].map((x, j) => {
 			if (notation.lessThan(x, parent)) {
 				let [prefix, index] = findPrefixInExpansion(x, parent);
-				let term = expand(parent, index + increment * (j == 0 ? i - 1 : i));
+				let offset = cutIsSuccessor ? 0 : 1;
+				let term = expand(parent, index + increment * ((j == 0 ? i - 1 : i) + offset));
 				let innerTerm = term;
 				let innerPrefix = prefix;
 				let innerX = x;
@@ -210,7 +222,9 @@ function expand(a, n) {
 					innerX = innerX[innerX.length - 1];
 					innerPrefix = innerPrefix[innerPrefix.length - 1];
 					innerTerm = innerTerm[innerTerm.length - 1];
+					if (innerX == null || innerTerm == null || innerPrefix == null) break;
 				}
+				if (innerTerm == null) innerTerm = [];
 				innerTerm.push(...innerX.slice(innerPrefix.length)); // copy suffix
 				return term;
 			}
@@ -220,11 +234,6 @@ function expand(a, n) {
 	}
 
 	return cacheResult(hash, out);
-}
-
-function bigLimit(n) {
-	if (n === 0) return [];
-	return [[], bigLimit(n-1)];
 }
 
 function limit(n) {
