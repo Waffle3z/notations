@@ -37,8 +37,10 @@ class notation {
 
 	static convertToNotation(value, useDefault = false) {
 		if (value == "") return "∅";
+		if (settings.notation == "Brackets" && !useDefault) return value;
 
 		const substitute = (s) => {
+			if (!settings.showOrdinals) return s;
 			s = s.replaceAll(/\[\]/g,"0").replaceAll(/\[0[0-9,]*\]/g, function(x) {
 				let a = JSON.parse(x);
 	
@@ -88,7 +90,7 @@ class notation {
 			if (notation.lessThan([], cutNode)) {
 				const parentIndex = sequence.findLastIndex(v => notation.lessThan(v, cutNode));
 				const parentNode = sequence[parentIndex];
-				const ancestor = getAncestor(cutNode, parentNode)[0];
+				const ancestor = getAncestor(cutNode);
 				const fromPath = (path) => convertSequence(ancestor)+"["+path.join("][")+"]";
 				const zeroth = expand(ancestor, 0);
 				const strings = sequence.map(x => {
@@ -112,11 +114,6 @@ function compareTerms(a, b) {
 	return b.length > a.length ? -1 : 0;
 }
 
-function toString(a) {
-	if (a == null) return "null";
-	return notation.convertToNotation(notation.toString(a), true);
-}
-
 const cache = new Map();
 function expand(a, n) {
 	if (a.length == 0) return [];
@@ -135,19 +132,18 @@ function expand(a, n) {
 		return out;
 	}
 
-	const parentIndex = a.findLastIndex(v => notation.lessThan(v, cutNode));
-	const parentNode = a[parentIndex];
 
 	// create an ordinal that can expand into cutNode and parentNode
-	const [ancestor, firstPath, secondPath] = getAncestor(cutNode, parentNode);
-
-	//console.log(toString(a)+"["+n+"]", "("+toString(ancestor)+")["+firstPath.join("][")+"] = "+toString(cutNode), "("+toString(ancestor)+")["+secondPath.join("][")+"] = "+toString(parentNode));
+	const ancestor = getAncestor(cutNode);
 
 	// either the cut node and its parent both have a path length of 1, or the parent has a path length of 2.
 	// if the parent has a path length of 2, expand the cut node while ascending the second path index.
 	// otherwise, expand the ancestor while ascending the first index of each term with a path length of 1
 
-	if (secondPath.length > 1) {
+	const parentIndex = a.findLastIndex(v => notation.lessThan(v, cutNode));
+	const parentNode = a[parentIndex];
+	const parentPath = getPath(ancestor, parentNode)
+	if (parentPath.length > 1) {
 		if (n == 0) {
 			const out = a.slice(0, parentIndex - 1);
 			cache.set(hash, out);
@@ -156,7 +152,7 @@ function expand(a, n) {
 		const out = a.slice(0, -1);
 		for (let i = 1; i < n; i++) {
 			const copy = a.slice(parentIndex, -1);
-			copy[0] = expand(cutNode, secondPath[1] + i);
+			copy[0] = expand(cutNode, parentPath[1] + i);
 			out.push(...copy);
 		}
 		cache.set(hash, out);
@@ -171,11 +167,12 @@ function expand(a, n) {
 	}
 	const tail = a.slice(rootIndex, -1);
 	const out = a.slice(0, -1);
-	const increment = firstPath[0] - ascendingTerms.at(-1)[1][0];
+	const increment = parentPath[0] + 1 - ascendingTerms.at(-1)[1][0];
 	for (let i = 1; i < n; i++) {
-		const ascendedCutNode = expand(ancestor, firstPath[0] + increment * (i - 1));
-		const ascendedParent = expand(ancestor, secondPath[0] + increment * (i - 1));
-		// expand the cut node into the first term greater than the parent node
+		const ascendedCutNode = expand(ancestor, parentPath[0] + 1 + increment * (i - 1));
+		let ascendedParent = expand(ancestor, parentPath[0] + increment * (i - 1));
+		for (let j = 1; j < parentPath.length; j++) ascendedParent = expand(ascendedParent, parentPath[j]);
+		// expand into the first term greater than the parent node
 		for (let expandIndex = 0; ; expandIndex++) {
 			const expanded = expand(ascendedCutNode, expandIndex);
 			if (notation.lessThan(ascendedParent, expanded)) {
@@ -200,11 +197,9 @@ function getAscendingTerms(a, parentIndex, ancestor) {
 	const parentNode = a[parentIndex];
 	let rootIndex = parentIndex;
 	const ascendingTerms = [];
-	//console.log("parent", parentIndex, toString(a), toString(parentNode));
 	for (let i = a.length - 2; i > 0; i--) {
 		if (notation.lessOrEqual(ancestor, a[i])) continue;
 		const path = getPath(ancestor, a[i]);
-		//console.log("path", i, toString(a), toString(ancestor), toString(a[i]), path);
 		if (path.length == 1 || notation.lessThan(parentNode, a[i])) {
 			rootIndex = i;
 			ascendingTerms.push([i, path]);
@@ -225,10 +220,7 @@ function getAscendingTerms(a, parentIndex, ancestor) {
 	return [ascendingTerms, rootIndex];
 }
 
-const ancestorCache = new Map();
-function getAncestor(cutNode, parentNode) {
-	const hash = notation.toString(cutNode) + "|" + notation.toString(parentNode);
-	if (ancestorCache.has(hash)) return ancestorCache.get(hash);
+function getAncestor(cutNode) {
 	// create a sequence greater than the cut node and less than the sequence being expanded
 	let ancestor = [];
 	for (let i = 2; ; i++) { // start from 0,1
@@ -245,31 +237,11 @@ function getAncestor(cutNode, parentNode) {
 			break;
 		}
 	}
+	
+	const path = getPath(ancestor, cutNode);
+	for (let i = 0; i < path.length - 1; i++) ancestor = expand(ancestor, path[i]);
 
-	// if the paths are different lengths and start differently, reduce the ancestor to a smaller value still greater than the cut node
-	let firstPath, secondPath;
-	while (true) {
-		firstPath = getPath(ancestor, cutNode);
-		secondPath = getPath(ancestor, parentNode);
-		if (firstPath[0] != secondPath[0] && firstPath.length > secondPath.length) {
-			// paths are different lengths but do not share the first index, find a smaller ancestor
-			for (let i = 0; ; i++) {
-				const newAncestor = expand(ancestor, i);
-				if (notation.lessThan(cutNode, newAncestor)) {
-					ancestor = newAncestor;
-					break;
-				}
-			}
-		} else if (firstPath[0] == secondPath[0] && firstPath.length > 1) {
-			// paths begin the same, reduce the ancestor
-			ancestor = expand(ancestor, firstPath[0]);
-		} else {
-			break;
-		}
-	}
-	const result = [ancestor, firstPath, secondPath];
-	ancestorCache.set(hash, result);
-	return result;
+	return ancestor;
 }
 
 function getPath(ancestor, target) {
@@ -352,9 +324,17 @@ function setNotation(newNotation) {
 
 document.addEventListener("DOMContentLoaded", () => {
 	settings.notation = "Ordinals";
+	settings.showOrdinals = true;
+
 	document.querySelectorAll('input[name="notation"]').forEach(function(radioInput) {
 		radioInput.addEventListener('change', function() {
 			setNotation(radioInput.value);
 		});
+	});
+
+	const ordinalsCheckbox = document.getElementById("showOrdinals");
+	ordinalsCheckbox.addEventListener('change', function() {
+		settings.showOrdinals = ordinalsCheckbox.checked;
+		refreshTerms();
 	});
 });
