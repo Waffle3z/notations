@@ -132,7 +132,6 @@ function expand(a, n) {
 		return out;
 	}
 
-
 	// create an ordinal that can expand into cutNode and parentNode
 	const ancestor = getAncestor(cutNode);
 
@@ -142,7 +141,7 @@ function expand(a, n) {
 
 	const parentIndex = a.findLastIndex(v => notation.lessThan(v, cutNode));
 	const parentNode = a[parentIndex];
-	const parentPath = getPath(ancestor, parentNode)
+	const parentPath = getPath(ancestor, parentNode);
 	if (parentPath.length > 1) {
 		if (n == 0) {
 			const out = a.slice(0, parentIndex - 1);
@@ -159,19 +158,30 @@ function expand(a, n) {
 		return out;
 	}
 
-	const [ascendingTerms, rootIndex] = getAscendingTerms(a, parentIndex, ancestor);
+	// the tail includes other terms further to the right which have a path length of 1,
+	// as well as terms greater than or equal to the ancestor, which do not ascend
+	// rootIndex is where the tail begins
+	let rootIndex = parentIndex;
+	while (rootIndex > 0) {
+		const index = a.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, a[rootIndex]));
+		const path = getPath(ancestor, a[index]);
+		if (path.length > 1) break;
+		rootIndex = index;
+	}
+
 	if (n == 0) { // cut from the root node
 		const out = a.slice(0, rootIndex);
 		cache.set(hash, out);
 		return out;
 	}
+
 	const tail = a.slice(rootIndex, -1);
+	const paths = tail.map(x => notation.lessThan(x, ancestor) ? getPath(ancestor, x) : []);
 	const out = a.slice(0, -1);
-	const increment = parentPath[0] + 1 - ascendingTerms.at(-1)[1][0];
+	const increment = parentPath[0] + 1 - paths[0][0];
 	for (let i = 1; i < n; i++) {
 		const ascendedCutNode = expand(ancestor, parentPath[0] + 1 + increment * (i - 1));
-		let ascendedParent = expand(ancestor, parentPath[0] + increment * (i - 1));
-		for (let j = 1; j < parentPath.length; j++) ascendedParent = expand(ascendedParent, parentPath[j]);
+		const ascendedParent = applyPath(ancestor, [parentPath[0] + increment * (i - 1), ...parentPath.slice(1)]);
 		// expand into the first term greater than the parent node
 		for (let expandIndex = 0; ; expandIndex++) {
 			const expanded = expand(ascendedCutNode, expandIndex);
@@ -180,44 +190,13 @@ function expand(a, n) {
 				break;
 			}
 		}
-		for (let [position, path] of ascendingTerms) {
-			let term = expand(ancestor, path[0] + increment * i);
-			for (let j = 1; j < path.length; j++) term = expand(term, path[j]);
-			tail[position - rootIndex] = term;
-		}
-		out.push(...tail);
+		out.push(...tail.map((v, j) => {
+			if (paths[j].length == 0) return v;
+			return applyPath(ancestor, [paths[j][0] + increment * i, ...paths[j].slice(1)]);
+		}));
 	}
 	cache.set(hash, out);
 	return out;
-}
-
-function getAscendingTerms(a, parentIndex, ancestor) {
-	// the tail includes other terms further to the right which have a path length of 1,
-	// as well as terms greater than or equal to the ancestor, which do not ascend
-	const parentNode = a[parentIndex];
-	let rootIndex = parentIndex;
-	const ascendingTerms = [];
-	for (let i = a.length - 2; i > 0; i--) {
-		if (notation.lessOrEqual(ancestor, a[i])) continue;
-		const path = getPath(ancestor, a[i]);
-		if (path.length == 1 || notation.lessThan(parentNode, a[i])) {
-			rootIndex = i;
-			ascendingTerms.push([i, path]);
-		} else {
-			// rootIndex is where the tail begins
-			while (true) {
-				const index = a.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, a[rootIndex]));
-				if (index > i) {
-					rootIndex = index;
-				} else {
-					while (ascendingTerms.at(-1)[0] < rootIndex) ascendingTerms.pop();
-					break;
-				}
-			}
-			break;
-		}
-	}
-	return [ascendingTerms, rootIndex];
 }
 
 function getAncestor(cutNode) {
@@ -238,10 +217,12 @@ function getAncestor(cutNode) {
 		}
 	}
 	
-	const path = getPath(ancestor, cutNode);
-	for (let i = 0; i < path.length - 1; i++) ancestor = expand(ancestor, path[i]);
+	return applyPath(ancestor, getPath(ancestor, cutNode).slice(0, -1));
+}
 
-	return ancestor;
+function applyPath(term, path) {
+	for (let i of path) term = expand(term, i);
+	return term;
 }
 
 function getPath(ancestor, target) {
