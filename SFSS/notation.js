@@ -105,6 +105,10 @@ class notation {
 	}
 };
 
+// debug utils
+const toString = (x) => notation.convertToNotation(notation.toString(x));
+const toStrings = (a) => a.map(x => toString(x));
+
 function compareTerms(a, b) {
 	for (let i = 0; i < a.length; i++) {
 		if (i >= b.length) return 1; // a > b
@@ -122,67 +126,47 @@ function expand(a, n) {
 	const hash = notation.toString(a)+"|"+n;
 	if (cache.has(hash)) return cache.get(hash);
 
-	let cutNode = a.at(-1);
+	const cutNode = a.at(-1);
+	const parentIndex = a.findLastIndex(v => notation.lessThan(v, cutNode));
 	if (notation.isSuccessor(cutNode)) {
-		const rootIndex = a.findLastIndex(v => notation.lessThan(v, cutNode));
-		const out = a.slice(0, rootIndex);
-		const tail = a.slice(rootIndex, -1);
+		const out = a.slice(0, parentIndex);
+		const tail = a.slice(parentIndex, -1);
 		for (let i = 0; i < n; i++) out.push(...tail);
 		cache.set(hash, out);
 		return out;
 	}
 
-	// create an ordinal that can expand into cutNode and parentNode
+	// find an ordinal where cutNode is in its fundamental sequence
 	const ancestor = getAncestor(cutNode);
 
-	// either the cut node and its parent both have a path length of 1, or the parent has a path length of 2.
-	// if the parent has a path length of 2, expand the cut node while ascending the second path index.
-	// otherwise, expand the ancestor while ascending the first index of each term with a path length of 1
-
-	const parentIndex = a.findLastIndex(v => notation.lessThan(v, cutNode));
-	const parentNode = a[parentIndex];
-	const parentPath = getPath(ancestor, parentNode);
-	if (parentPath.length > 1) {
-		if (n == 0) {
-			const out = a.slice(0, parentIndex - 1);
-			cache.set(hash, out);
-			return out;
-		}
-		const out = a.slice(0, -1);
-		for (let i = 1; i < n; i++) {
-			const copy = a.slice(parentIndex, -1);
-			copy[0] = expand(cutNode, parentPath[1] + i);
-			out.push(...copy);
-		}
-		cache.set(hash, out);
-		return out;
-	}
-
-	// the tail includes other terms further to the right which have a path length of 1,
-	// as well as terms greater than or equal to the ancestor, which do not ascend
-	// rootIndex is where the tail begins
+	// rootIndex is the first recursive parent of the cut node that is not an element of the ancestor's fundamental sequence
 	let rootIndex = parentIndex;
-	while (rootIndex > 0) {
-		const index = a.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, a[rootIndex]));
-		const path = getPath(ancestor, a[index]);
-		if (path.length > 1) {
-			// root is one to the right because the cut node is copied instead when expanding
-			rootIndex = index + 1;
-			break;
-		}
-		rootIndex = index;
+	while (getPath(ancestor, a[rootIndex]).length == 1) {
+		rootIndex = a.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, a[rootIndex]));
 	}
 
 	if (n == 0) { // cut from the root node
-		const out = a.slice(0, rootIndex);
+		const out = a.slice(0, rootIndex - 1);
 		cache.set(hash, out);
 		return out;
 	}
 
-	const tail = a.slice(rootIndex, -1);
+	const parentPath = getPath(ancestor, a[parentIndex]);
+	if (parentIndex == rootIndex) { // expand and ascend the cut node instead of the ancestor
+		const out = a.slice(0, -1);
+		for (let i = 1; i < n; i++) {
+			out.push(expand(cutNode, parentPath[1] + i), ...a.slice(parentIndex + 1, -1));
+		}
+		cache.set(hash, out);
+		return out;
+	}
+	
+	// expand the ancestor while ascending the first index of each term in the tail less than the ancestor
+	const tail = a.slice(rootIndex + 1, -1); // tail begins one index after rootIndex because the cut node is copied instead of the root
 	const paths = tail.map(x => notation.lessThan(x, ancestor) ? getPath(ancestor, x) : []);
+	const firstAscendingPath = paths.find(x => x.length > 0);
+	const increment = parentPath[0] + 1 - firstAscendingPath[0];
 	const out = a.slice(0, -1);
-	const increment = parentPath[0] + 1 - paths[0][0];
 	for (let i = 1; i < n; i++) {
 		const ascendedCutNode = expand(ancestor, parentPath[0] + 1 + increment * (i - 1));
 		const ascendedParent = applyPath(ancestor, [parentPath[0] + increment * (i - 1), ...parentPath.slice(1)]);
