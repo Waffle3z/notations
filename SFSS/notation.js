@@ -165,7 +165,11 @@ function expand(a, n) {
 	while (rootIndex > 0) {
 		const index = a.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, a[rootIndex]));
 		const path = getPath(ancestor, a[index]);
-		if (path.length > 1) break;
+		if (path.length > 1) {
+			// root is one to the right because the cut node is copied instead when expanding
+			rootIndex = index + 1;
+			break;
+		}
 		rootIndex = index;
 	}
 
