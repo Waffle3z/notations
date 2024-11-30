@@ -56,7 +56,7 @@ class notation {
 				return PrSStoCNF(standardizePrSS(a));
 			});
 			for (let x of aliases) s = s.replaceAll(x[0], x[1]);
-			return settings.showCommas ? s : s.replaceAll(",", " ");
+			return s;
 		}
 
 		const defaultConvert = (v) => {
@@ -66,7 +66,8 @@ class notation {
 				if (next == s) break;
 				s = next;
 			}
-			return substitute(s);
+			s = substitute(s);
+			return settings.showCommas ? s : s.replaceAll(",", " ");
 		}
 		const convertSequence = (sequence) => substitute("["+defaultConvert(notation.toString(sequence))+"]");
 
