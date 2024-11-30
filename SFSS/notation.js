@@ -122,7 +122,6 @@ const cache = new Map();
 function expand(a, n) {
 	if (a.length == 0) return [];
 	if (n == 1) return a.slice(0, -1); // n == 0 requires finding the tail
-	if (notation.toString(a) == "[][[]]") return Array(n).fill([]);
 	const hash = notation.toString(a)+"|"+n;
 	if (cache.has(hash)) return cache.get(hash);
 
@@ -146,13 +145,13 @@ function expand(a, n) {
 	}
 
 	if (n == 0) { // cut from the root node
-		const out = a.slice(0, rootIndex - 1);
+		const out = a.slice(0, rootIndex);
 		cache.set(hash, out);
 		return out;
 	}
 
 	const parentPath = getPath(ancestor, a[parentIndex]);
-	if (parentIndex == rootIndex) { // expand and ascend the cut node instead of the ancestor
+	if (parentIndex == rootIndex) { // ascend the second index instead of the first
 		const out = a.slice(0, -1);
 		for (let i = 1; i < n; i++) {
 			out.push(expand(cutNode, parentPath[1] + i), ...a.slice(parentIndex + 1, -1));
@@ -161,7 +160,7 @@ function expand(a, n) {
 		return out;
 	}
 	
-	// expand the ancestor while ascending the first index of each term in the tail less than the ancestor
+	// expand the ancestor while ascending the first path index of each term in the tail less than the ancestor
 	const tail = a.slice(rootIndex + 1, -1); // tail begins one index after rootIndex because the cut node is copied instead of the root
 	const paths = tail.map(x => notation.lessThan(x, ancestor) ? getPath(ancestor, x) : []);
 	const firstAscendingPath = paths.find(x => x.length > 0);
@@ -225,9 +224,8 @@ function getPath(ancestor, target) {
 }
 
 function limit(n) {
-	if (n === 0) return [];
-	if (n === 1) return [[]];
-	let out = [];
+	if (n == 0) return [];
+	const out = [];
 	for (let i = 0; i < n; i++) out.push(limit(i));
 	return out;
 }
