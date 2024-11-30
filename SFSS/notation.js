@@ -41,7 +41,7 @@ class notation {
 
 		const substitute = (s) => {
 			if (!settings.showOrdinals) return s;
-			s = s.replaceAll(/\[\]/g,"0").replaceAll(/\[0[0-9,]*\]/g, function(x) {
+			s = s.replaceAll(/\[\]/g,"0").replaceAll(/\[0[0-9,]*\]/g, (x) => {
 				let a = JSON.parse(x);
 	
 				for (let i = a.length-2; i > 0; i--) { // standardize
@@ -55,22 +55,8 @@ class notation {
 				}
 				return PrSStoCNF(standardizePrSS(a));
 			});
-			s = s.replaceAll("[0,1,ω]", "ε₀");
-			s = s.replaceAll("[0,1,ω,ω]", "ε₁");
-			s = s.replaceAll("[0,1,ω,ω,ω]", "ε₂");
-			s = s.replaceAll("[0,1,ω,ω+1]", "ε_ω");
-			s = s.replaceAll("[0,1,ω,ω+1,ω2]", "ε_ε₀");
-			s = s.replaceAll("[0,1,ω,ω+1,ω2,ω2+1,ω3]", "ε_ε_ε₀");
-			s = s.replaceAll("[0,1,ω,ω2]", "ζ₀");
-			s = s.replaceAll("[0,1,ω,ω2,ω,ω2]", "ζ₁");
-			s = s.replaceAll("[0,1,ω,ω2,ω,ω2,ω,ω2]", "ζ₂");
-			s = s.replaceAll("[0,1,ω,ω2,ω+1]", "ζ_ω");
-			s = s.replaceAll("[0,1,ω,ω2,ω2]", "η₀");
-			s = s.replaceAll("[0,1,ω,ω2,ω2+1]", "φ(ω,0)");
-			s = s.replaceAll("[0,1,ω,ω2,ω3]", "Γ₀");
-			s = s.replaceAll("[0,1,ω,ω2,ω3,ω4]", "LVO");
-			s = s.replaceAll("[0,1,ω,ω2,ω^2]", "ψ₀(Ω₂)");
-			return s;
+			for (let x of aliases) s = s.replaceAll(x[0], x[1]);
+			return settings.showCommas ? s : s.replaceAll(",", " ");
 		}
 
 		const defaultConvert = (v) => {
@@ -88,8 +74,6 @@ class notation {
 			const sequence = notation.fromString(value);
 			const cutNode = sequence.at(-1);
 			if (notation.lessThan([], cutNode)) {
-				const parentIndex = sequence.findLastIndex(v => notation.lessThan(v, cutNode));
-				const parentNode = sequence[parentIndex];
 				const ancestor = getAncestor(cutNode);
 				const fromPath = (path) => convertSequence(ancestor)+"["+path.join("][")+"]";
 				const zeroth = expand(ancestor, 0);
@@ -97,7 +81,7 @@ class notation {
 					if (notation.lessThan(x, ancestor) && notation.lessOrEqual(zeroth, x)) return fromPath(getPath(ancestor, x));
 					return convertSequence(x)
 				});
-				return strings.join(",");
+				return strings.join(settings.showCommas ? "," : " ");
 			}
 		}
 
@@ -292,6 +276,7 @@ function setNotation(newNotation) {
 document.addEventListener("DOMContentLoaded", () => {
 	settings.notation = "Ordinals";
 	settings.showOrdinals = true;
+	settings.showCommas = true;
 
 	document.querySelectorAll('input[name="notation"]').forEach(function(radioInput) {
 		radioInput.addEventListener('change', function() {
@@ -304,4 +289,28 @@ document.addEventListener("DOMContentLoaded", () => {
 		settings.showOrdinals = ordinalsCheckbox.checked;
 		refreshTerms();
 	});
+
+	const commasCheckbox = document.getElementById("showCommas");
+	commasCheckbox.addEventListener('change', function() {
+		settings.showCommas = commasCheckbox.checked;
+		refreshTerms();
+	});
 });
+
+const aliases = [
+	["[0,1,ω]", "ε₀"],
+	["[0,1,ω,ω]", "ε₁"],
+	["[0,1,ω,ω,ω]", "ε₂"],
+	["[0,1,ω,ω+1]", "ε_ω"],
+	["[0,1,ω,ω+1,ω2]", "ε_ε₀"],
+	["[0,1,ω,ω+1,ω2,ω2+1,ω3]", "ε_ε_ε₀"],
+	["[0,1,ω,ω2]", "ζ₀"],
+	["[0,1,ω,ω2,ω,ω2]", "ζ₁"],
+	["[0,1,ω,ω2,ω,ω2,ω,ω2]", "ζ₂"],
+	["[0,1,ω,ω2,ω+1]", "ζ_ω"],
+	["[0,1,ω,ω2,ω2]", "η₀"],
+	["[0,1,ω,ω2,ω2+1]", "φ(ω,0)"],
+	["[0,1,ω,ω2,ω3]", "Γ₀"],
+	["[0,1,ω,ω2,ω3,ω4]", "LVO"],
+	["[0,1,ω,ω2,ω^2]", "ψ₀(Ω₂)"],
+];
