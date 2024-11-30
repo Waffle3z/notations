@@ -40,8 +40,9 @@ class notation {
 		if (settings.notation == "Brackets" && !useDefault) return value;
 
 		const substitute = (s) => {
+			s = s.replaceAll(/\[\]/g,"0");
 			if (!settings.showOrdinals) return s;
-			s = s.replaceAll(/\[\]/g,"0").replaceAll(/\[0[0-9,]*\]/g, (x) => {
+			s = s.replaceAll(/\[0[0-9,]*\]/g, (x) => {
 				let a = JSON.parse(x);
 	
 				for (let i = a.length-2; i > 0; i--) { // standardize
@@ -66,8 +67,7 @@ class notation {
 				if (next == s) break;
 				s = next;
 			}
-			s = substitute(s);
-			return settings.showCommas ? s : s.replaceAll(",", " ");
+			return substitute(s);
 		}
 		const convertSequence = (sequence) => substitute("["+defaultConvert(notation.toString(sequence))+"]");
 
@@ -80,13 +80,14 @@ class notation {
 				const zeroth = expand(ancestor, 0);
 				const strings = sequence.map(x => {
 					if (notation.lessThan(x, ancestor) && notation.lessOrEqual(zeroth, x)) return fromPath(getPath(ancestor, x));
-					return convertSequence(x)
+					return convertSequence(x);
 				});
 				return strings.join(settings.showCommas ? "," : " ");
 			}
 		}
 
-		return defaultConvert(value);
+		const s = defaultConvert(value);
+		return settings.showCommas ? s : s.replaceAll(",", " ");
 	}
 };
 
