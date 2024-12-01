@@ -77,9 +77,10 @@ class notation {
 			if (notation.lessThan([], cutNode)) {
 				const ancestor = getAncestor(cutNode);
 				const fromPath = (path) => convertSequence(ancestor)+"["+path.join("][")+"]";
-				const zeroth = expand(ancestor, 0);
-				const strings = sequence.map(x => {
-					if (notation.lessThan(x, ancestor) && notation.lessOrEqual(zeroth, x)) return fromPath(getPath(ancestor, x));
+				const parentIndex = sequence.findLastIndex(v => notation.lessThan(v, cutNode));
+				const rootIndex = getRootIndex(sequence, ancestor, parentIndex);
+				const strings = sequence.map((x, i) => {
+					if (notation.lessThan(x, ancestor) && i >= rootIndex) return fromPath(getPath(ancestor, x));
 					return convertSequence(x);
 				});
 				return strings.join(settings.showCommas ? "," : " ");
@@ -121,76 +122,72 @@ function expand(a, n) {
 		return out;
 	}
 
-	// find an ordinal where cutNode is in its fundamental sequence
 	const ancestor = getAncestor(cutNode);
-
-	// rootIndex is the first recursive parent of the cut node that is not an element of the ancestor's fundamental sequence
+	// rootIndex is the first recursive parent of the cut node that has a longer path
 	let rootIndex = parentIndex;
-	while (getPath(ancestor, a[rootIndex]).length == 1) {
+	const cutNodePath = getPath(ancestor, cutNode);
+	while (getPath(ancestor, a[rootIndex]).length <= cutNodePath.length) {
 		rootIndex = a.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, a[rootIndex]));
 	}
+	const rootNodePath = getPath(ancestor, a[rootIndex]);
+	const parentPath = getPath(ancestor, a[parentIndex]);
+	const ascendingIndex = rootNodePath.findIndex((x, i) => i >= cutNodePath.length || x < cutNodePath[i]);
 
 	if (n == 0) { // cut from the root node
 		const out = a.slice(0, rootIndex);
 		cache.set(hash, out);
 		return out;
 	}
-
-	const parentPath = getPath(ancestor, a[parentIndex]);
-	if (parentIndex == rootIndex) { // ascend the second index instead of the first
-		const out = a.slice(0, -1);
-		for (let i = 1; i < n; i++) {
-			out.push(expand(cutNode, parentPath[1] + i), ...a.slice(parentIndex + 1, -1));
-		}
-		cache.set(hash, out);
-		return out;
-	}
 	
-	// expand the ancestor while ascending the first path index of each term in the tail less than the ancestor
-	const tail = a.slice(rootIndex + 1, -1); // tail begins one index after rootIndex because the cut node is copied instead of the root
+	// expand the ancestor while increasing ascendingIndex in each term's path
+	const tail = a.slice(rootIndex, -1);
 	const paths = tail.map(x => notation.lessThan(x, ancestor) ? getPath(ancestor, x) : []);
-	const firstAscendingPath = paths.find(x => x.length > 0);
-	const increment = parentPath[0] + 1 - firstAscendingPath[0];
+	const increment = ascendingIndex >= cutNodePath.length ? 1 : cutNodePath[ascendingIndex] - rootNodePath[ascendingIndex];
 	const out = a.slice(0, -1);
 	for (let i = 1; i < n; i++) {
-		const ascendedCutNode = expand(ancestor, parentPath[0] + 1 + increment * (i - 1));
-		const ascendedParent = applyPath(ancestor, [parentPath[0] + increment * (i - 1), ...parentPath.slice(1)]);
-		// expand into the first term greater than the parent node
-		for (let expandIndex = 0; ; expandIndex++) {
-			const expanded = expand(ascendedCutNode, expandIndex);
-			if (notation.lessThan(ascendedParent, expanded)) {
-				out.push(expanded);
-				break;
-			}
-		}
 		out.push(...tail.map((v, j) => {
-			if (paths[j].length == 0) return v;
-			return applyPath(ancestor, [paths[j][0] + increment * i, ...paths[j].slice(1)]);
+			if (paths[j].length <= ascendingIndex) return v;
+			const newPath = [...paths[j]];
+			newPath[ascendingIndex] += increment * i;
+			if (j == 0 && newPath.length > ascendingIndex + 1) { // ascend the next index until it's greater than the previous copy of the parent
+				const newParentPath = [...parentPath];
+				newParentPath[ascendingIndex] += increment * (i - 1);
+				const ascendedParent = applyPath(ancestor, newParentPath);
+				newPath[ascendingIndex + 1] = 0;
+				while (notation.lessOrEqual(applyPath(ancestor, newPath), ascendedParent)) newPath[ascendingIndex + 1]++;
+			}
+			return applyPath(ancestor, newPath);
 		}));
 	}
 	cache.set(hash, out);
 	return out;
 }
 
-function getAncestor(cutNode) {
-	// create a sequence greater than the cut node and less than the sequence being expanded
-	let ancestor = [];
+function getGreaterLimit(cutNode) {
+	// first limit term greater than cutNode
 	for (let i = 2; ; i++) { // start from 0,1
 		const term = limit(i);
-		if (notation.lessThan(cutNode, term)) {
-			ancestor = term;
-			break;
-		}
+		if (notation.lessThan(cutNode, term)) return term;
 		// try again with the last value repeated twice
 		// this solves 0,1,ω,ε₀ getting stuck when the first limit(i) greater than the cut node is the same sequence
 		term.push(term.at(-1));
-		if (notation.lessThan(cutNode, term)) {
-			ancestor = term;
-			break;
-		}
+		if (notation.lessThan(cutNode, term)) return term;
 	}
-	
-	return applyPath(ancestor, getPath(ancestor, cutNode).slice(0, -1));
+}
+
+function getAncestor(cutNode) {
+	// create a sequence greater than the cut node and less than the sequence being expanded
+	const greaterLimit = getGreaterLimit(cutNode);
+	return applyPath(greaterLimit, getPath(greaterLimit, cutNode).slice(0, -1));
+}
+
+function getRootIndex(sequence, ancestor, parentIndex) {
+	// rootIndex is the first recursive parent of the cut node that is not an element of the ancestor's fundamental sequence
+	let rootIndex = parentIndex;
+	while (getPath(ancestor, sequence[rootIndex]).length == 1) {
+		rootIndex = sequence.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, sequence[rootIndex]));
+	}
+	return rootIndex;
 }
 
 function applyPath(term, path) {
