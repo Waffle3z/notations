@@ -71,6 +71,7 @@ class notation {
 		}
 		const convertSequence = (sequence) => substitute("["+defaultConvert(notation.toString(sequence))+"]");
 
+		let s = defaultConvert(value);
 		if (settings.notation == "Paths" && !useDefault) {
 			const sequence = notation.fromString(value);
 			const cutNode = sequence.at(-1);
@@ -83,11 +84,10 @@ class notation {
 					if (notation.lessThan(x, ancestor) && i >= rootIndex) return fromPath(getPath(ancestor, x));
 					return convertSequence(x);
 				});
-				return strings.join(settings.showCommas ? "," : " ");
+				s = strings.join(",");
 			}
 		}
 
-		const s = defaultConvert(value);
 		return settings.showCommas ? s : s.replaceAll(",", " ");
 	}
 };
@@ -142,6 +142,11 @@ function expand(a, n) {
 		const offsets = [];
 		out.push(...tail.map((v, j) => {
 			if (paths[j].length <= ascendingIndex) return v;
+			for (let k = 0; k < ascendingIndex; k++) {
+				// only ascend if the indices before ascendingIndex match the root node
+				if (paths[j][k] != rootNodePath[k]) return v;
+			}
+
 			const newPath = [...paths[j]];
 			for (let k = 0; k < offsets.length; k++) {
 				if (ascendingIndex + k >= newPath.length) break;
