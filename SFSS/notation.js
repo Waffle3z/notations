@@ -75,7 +75,7 @@ class notation {
 			const sequence = notation.fromString(value);
 			const cutNode = sequence.at(-1);
 			if (notation.lessThan([], cutNode)) {
-				const ancestor = getAncestor(cutNode);
+				const ancestor = getAncestor(sequence);
 				const fromPath = (path) => convertSequence(ancestor)+"["+path.join("][")+"]";
 				const parentIndex = sequence.findLastIndex(v => notation.lessThan(v, cutNode));
 				const rootIndex = getRootIndex(sequence, ancestor, parentIndex);
@@ -122,11 +122,11 @@ function expand(a, n) {
 		return out;
 	}
 
-	const ancestor = getAncestor(cutNode);
+	const ancestor = getAncestor(a);
 	// rootIndex is the first recursive parent of the cut node that has a longer path
 	let rootIndex = parentIndex;
 	const cutNodePath = getPath(ancestor, cutNode);
-	while (getPath(ancestor, a[rootIndex]).length <= cutNodePath.length) {
+	while (getPath(ancestor, a[rootIndex]).length <= cutNodePath.length && notation.lessThan([], a[rootIndex])) {
 		rootIndex = a.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, a[rootIndex]));
 	}
 	const rootNodePath = getPath(ancestor, a[rootIndex]);
@@ -145,16 +145,32 @@ function expand(a, n) {
 	const increment = ascendingIndex >= cutNodePath.length ? 1 : cutNodePath[ascendingIndex] - rootNodePath[ascendingIndex];
 	const out = a.slice(0, -1);
 	for (let i = 1; i < n; i++) {
+		const offsets = [];
 		out.push(...tail.map((v, j) => {
 			if (paths[j].length <= ascendingIndex) return v;
 			const newPath = [...paths[j]];
 			newPath[ascendingIndex] += increment * i;
-			if (j == 0 && newPath.length > ascendingIndex + 1) { // ascend the next index until it's greater than the previous copy of the parent
+			for (let k = 0; k < offsets.length; k++) {
+				if (ascendingIndex + 1 + k >= newPath.length) break;
+				newPath[ascendingIndex + 1 + k] += offsets[k];
+			}
+			if (j == 0 && newPath.length > ascendingIndex + 1) { // find the path with the smallest indices resulting in a value greater than the previous copy of the parent node
 				const newParentPath = [...parentPath];
 				newParentPath[ascendingIndex] += increment * (i - 1);
 				const ascendedParent = applyPath(ancestor, newParentPath);
-				newPath[ascendingIndex + 1] = 0;
-				while (notation.lessOrEqual(applyPath(ancestor, newPath), ascendedParent)) newPath[ascendingIndex + 1]++;
+				let newValue = applyPath(ancestor, newPath.slice(0, ascendingIndex + 1));
+				// increase the remaining indices to the point where the new term exceeds the previous copy of the parent node
+				for (let k = ascendingIndex + 1; k < newPath.length; k++) {
+					for (let index = 0; ; index++) {
+						const candidate = expand(newValue, index);
+						if (notation.lessThan(ascendedParent, candidate)) {
+							newValue = candidate;
+							newPath[k] = index;
+							offsets.push(index - paths[j][k]);
+							break;
+						}
+					}
+				}
 			}
 			return applyPath(ancestor, newPath);
 		}));
@@ -175,10 +191,25 @@ function getGreaterLimit(cutNode) {
 	}
 }
 
-function getAncestor(cutNode) {
+function getAncestor(sequence) {
 	// create a sequence greater than the cut node and less than the sequence being expanded
+	const cutNode = sequence.at(-1);
 	const greaterLimit = getGreaterLimit(cutNode);
-	return applyPath(greaterLimit, getPath(greaterLimit, cutNode).slice(0, -1));
+	let ancestor = greaterLimit;
+	const cutNodePath = getPath(greaterLimit, cutNode);
+	if (cutNodePath.length == 1) return ancestor;
+	const parentIndex = sequence.findLastIndex(v => notation.lessThan(v, cutNode));
+	for (let i of cutNodePath) {
+		ancestor = expand(ancestor, i);
+		let rootIndex = parentIndex;
+		const newCutNodePath = getPath(ancestor, cutNode);
+		while (getPath(ancestor, sequence[rootIndex]).length <= newCutNodePath.length && notation.lessThan([], sequence[rootIndex])) {
+			rootIndex = sequence.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, sequence[rootIndex]));
+		}
+		const rootNodePath = getPath(ancestor, sequence[rootIndex]);
+		if (rootNodePath.length > newCutNodePath.length) return ancestor;
+	}
+	return applyPath(greaterLimit, cutNodePath.slice(0, -1));
 }
 
 function getRootIndex(sequence, ancestor, parentIndex) {
