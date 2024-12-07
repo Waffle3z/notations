@@ -53,6 +53,7 @@ function unexpandButton(button) {
 	const children = getChildren(button);
 	if (!children) return;
 	if (children.classList.contains("expanded")) {
+		if (children.firstElementChild.contains(selectedButton)) selectButton(button);
 		children.removeChild(children.firstElementChild);
 		if (!children.firstElementChild) {
 			children.classList.toggle("expanded");

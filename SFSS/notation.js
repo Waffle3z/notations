@@ -107,6 +107,7 @@ function compareTerms(a, b) {
 
 const cache = new Map();
 function expand(a, n) {
+	//if (n > 100) error();
 	if (a.length == 0) return [];
 	if (n == 1) return a.slice(0, -1); // n == 0 requires finding the tail
 	const hash = notation.toString(a)+"|"+n;
@@ -137,39 +138,63 @@ function expand(a, n) {
 	// expand the ancestor while increasing ascendingIndex in each term's path
 	const tail = a.slice(rootIndex, -1);
 	const paths = tail.map(x => notation.lessThan(x, ancestor) ? getPath(ancestor, x) : []);
+	const increment = ascendingIndex >= cutNodePath.length ? 1 : cutNodePath[ascendingIndex] - rootNodePath[ascendingIndex];
 	const out = a.slice(0, -1);
 	for (let i = 1; i < n; i++) {
 		const offsets = [];
-		out.push(...tail.map((v, j) => {
-			if (paths[j].length <= ascendingIndex) return v;
+		let parentPathLengthIncreases = [];
+		const copy = [];
+		tail.forEach((v, j) => {
+			parentPathLengthIncreases.push(0);
+			if (paths[j].length <= ascendingIndex) return copy.push(v);
 			for (let k = 0; k < ascendingIndex; k++) {
 				// only ascend if the indices before ascendingIndex match the root node
-				if (paths[j][k] != rootNodePath[k]) return v;
+				if (paths[j][k] != rootNodePath[k]) return copy.push(v);
 			}
 
 			const newPath = [...paths[j]];
+			newPath[ascendingIndex] += increment * i;
 			for (let k = 0; k < offsets.length; k++) {
-				if (ascendingIndex + k >= newPath.length) break;
-				newPath[ascendingIndex + k] += offsets[k];
+				if (ascendingIndex + 1 + k >= newPath.length) break;
+				newPath[ascendingIndex + 1 + k] += offsets[k];
 			}
-			if (j == 0) { // find the path with the smallest indices resulting in a value greater than the previous copy of the parent node
+			if (j == 0 && newPath.length > ascendingIndex + 1) { // find the path with the smallest indices resulting in a value greater than the previous copy of the parent node
 				const ascendedParent = out[parentIndex + tail.length * (i - 1)];
-				let newValue = applyPath(ancestor, newPath.slice(0, ascendingIndex));
+				const parentPath = getPath(ancestor, ascendedParent);
+				let newValue = applyPath(ancestor, newPath.slice(0, ascendingIndex + 1));
 				// increase the remaining indices to the point where the new term exceeds the previous copy of the parent node
-				for (let k = ascendingIndex; k < newPath.length; k++) {
-					for (let index = 0; ; index++) {
-						const candidate = expand(newValue, index);
-						if (notation.lessThan(ascendedParent, candidate)) {
-							newValue = candidate;
-							newPath[k] = index;
-							offsets.push(index - paths[j][k]);
-							break;
-						}
-					}
+				for (let k = ascendingIndex + 1; k < newPath.length; k++) {
+					[newPath[k], newValue] = firstGreaterInExpansion(newValue, ascendedParent, newPath[k], k == newPath.length - 1);
+					offsets.push(newPath[k] - paths[j][k]);
 				}
-			}
-			return applyPath(ancestor, newPath);
-		}));
+			} /*else if (j > 0 && notation.isSuccessor(v) && notation.lessThan([[]], v)) {
+				let result = applyPath(ancestor, newPath);
+				const currentParent = copy.findLast(x => notation.lessThan(x, result));
+				let increases = 0;
+				while (!notation.isSuccessor(result)) {
+					increases++;
+					let newIndex;
+					[newIndex, result] = firstGreaterInExpansion(result, currentParent);
+					newPath.push(newIndex);
+				}
+				parentPathLengthIncreases[j] = increases;
+			} else {
+				let result = applyPath(ancestor, newPath);
+				const currentParentIndex = copy.findLastIndex(x => notation.lessThan(x, result));
+				if (currentParentIndex > 0) {
+					const currentParent = copy[currentParentIndex];
+					const increases = parentPathLengthIncreases[currentParentIndex];
+					for (let k = 0; k < increases; k++) {
+						let newIndex;
+						[newIndex, result] = firstGreaterInExpansion(result, currentParent);
+						newPath.push(newIndex);
+					}
+					parentPathLengthIncreases[j] = increases;
+				}
+			}*/
+			copy.push(applyPath(ancestor, newPath));
+		});
+		out.push(...copy);
 	}
 	cache.set(hash, out);
 	return out;
@@ -187,23 +212,41 @@ function getGreaterLimit(cutNode) {
 	}
 }
 
+function firstGreaterInExpansion(ancestor, target, startIndex = 0, successorAllowed = true) {
+	let index = startIndex;
+	while (true) {
+		const value = expand(ancestor, index);
+		if (notation.lessThan(target, value) && (successorAllowed || !notation.isSuccessor(value))) return [index, value];
+		index++;
+	}
+}
+
 function getAncestor(sequence) {
 	// create a sequence greater than the cut node and less than the sequence being expanded
 	const cutNode = sequence.at(-1);
 	const greaterLimit = getGreaterLimit(cutNode);
 	let ancestor = greaterLimit;
 	const cutNodePath = getPath(greaterLimit, cutNode);
-	if (cutNodePath.length == 1) return ancestor;
 	const parentIndex = sequence.findLastIndex(v => notation.lessThan(v, cutNode));
-	for (let i of cutNodePath) {
-		ancestor = expand(ancestor, i);
+	while (!notation.isSuccessor(ancestor)) {
 		let rootIndex = parentIndex;
 		const newCutNodePath = getPath(ancestor, cutNode);
 		while (getPath(ancestor, sequence[rootIndex]).length <= newCutNodePath.length && notation.lessThan([], sequence[rootIndex])) {
 			rootIndex = sequence.findLastIndex((x, j) => j < rootIndex && notation.lessThan(x, sequence[rootIndex]));
 		}
 		const rootNodePath = getPath(ancestor, sequence[rootIndex]);
-		if (rootNodePath.length > newCutNodePath.length) return ancestor;
+		if (rootNodePath.length > newCutNodePath.length) {// && notation.lessThan([], sequence[rootIndex])) {
+			// reduce the ancestor if the cut node and root node paths start the same
+			for (let i = 0; i < newCutNodePath.length - 1; i++) {
+				if (rootNodePath[i] == newCutNodePath[i]) {
+					ancestor = expand(ancestor, rootNodePath[i]);
+				} else {
+					break;
+				}
+			}
+			return ancestor;
+		}
+		ancestor = firstGreaterInExpansion(ancestor, cutNode)[1];
 	}
 	return applyPath(greaterLimit, cutNodePath.slice(0, -1));
 }
