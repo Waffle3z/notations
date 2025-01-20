@@ -88,17 +88,27 @@ function notationFromString(s) {
 			function isSuccessor(array) { return array.length == 0 || array.at(-1) == 0; }
 			function notationToString(array) { return JSON.stringify(array).slice(1, -1); }
 			function notationFromString(s) { return JSON.parse("["+s+"]"); }
+			convertToNotation = null;
 
-			eval(source.value);
-			notation.expand = expand;
-			notation.expandLimit = expandLimit;
-			notation.lessOrEqual = lessOrEqual;
-			notation.isSuccessor = isSuccessor;
-			notation.toString = notationToString;
-			notation.fromString = notationFromString;
+			try {
+				eval(source.value);
+				notation.expand = expand;
+				notation.expandLimit = expandLimit;
+				notation.lessOrEqual = lessOrEqual;
+				notation.isSuccessor = isSuccessor;
+				notation.toString = notationToString;
+				notation.fromString = notationFromString;
+				notation.convertToNotation = convertToNotation;
 
-			let code = encodeURIComponent(source.value).replace(/\(/g, '%28').replace(/\)/g, '%29');
-			window.history.replaceState(null, "Dynamic", `?custom=${code}`);
+				let code = encodeURIComponent(source.value).replace(/\(/g, '%28').replace(/\)/g, '%29');
+				window.history.replaceState(null, "Dynamic", `?custom=${code}`);
+
+				update.value = "Updated";
+			} catch(e) {
+				update.value = "Error";
+				console.error(e);
+			}
+			setTimeout(function() { update.value = "Update"; }, 1000);
 		}
 
 		const queryString = window.location.search;

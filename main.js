@@ -204,7 +204,7 @@ function refreshIndentation() {
 		while (current) {
 			indentli(current.parentElement, index);
 			stack.push(current);
-			index++
+			index++;
 			current = getButtonPreviousSibling(current);
 		}
 	}

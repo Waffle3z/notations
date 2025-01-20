@@ -80,6 +80,11 @@ ul {
 	position: fixed;
 	bottom: 0;
 	width: 100%;
+	pointer-events: none;
+}
+
+#footer a {
+	pointer-events: auto;
 }
 
 #settings {
