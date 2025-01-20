@@ -51,6 +51,7 @@ function notationFromString(s) {
 }</textarea>
 			<br>
 			<input id="update" value="Update" type="button" onclick="updateSource()"/>
+			<input id="hide" value="Hide" type="button" onclick="toggleTextArea()"/>
 		</div>
 		<div id="settings">
 			<fieldset id="indentationContainer">
@@ -68,6 +69,7 @@ function notationFromString(s) {
 					<label for="noindent">None</label>
 				</div>
 			</fieldset>
+			<input id="show" value="Show editor" type="button" onclick="toggleTextArea()" hidden/>
 		</div>
 	</div>
 	<script>
@@ -109,6 +111,15 @@ function notationFromString(s) {
 				console.error(e);
 			}
 			setTimeout(function() { update.value = "Update"; }, 1000);
+		}
+
+		let hideButton = document.getElementById("hide");
+		let showButton = document.getElementById("show");
+		function toggleTextArea() {
+			source.hidden = !source.hidden;
+			update.hidden = source.hidden;
+			hide.hidden = source.hidden;
+			show.hidden = !source.hidden;
 		}
 
 		const queryString = window.location.search;
