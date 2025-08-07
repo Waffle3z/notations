@@ -325,7 +325,15 @@ function initialize() {
 		if (notation.footer) {
 			footer.innerHTML = notation.footer + " | ";
 		}
-		footer.innerHTML += "<a href='..'>Index</a>";
+		const indexLink = document.createElement("a");
+		indexLink.textContent = "Index";
+		let indexHref = "..";
+		const baseEl = document.querySelector("base");
+		if (baseEl && baseEl.href) {
+			indexHref = baseEl.href;
+		}
+		indexLink.setAttribute("href", indexHref);
+		footer.appendChild(indexLink);
 		document.body.appendChild(footer);
 	}
 	

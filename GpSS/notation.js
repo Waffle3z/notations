@@ -11,6 +11,16 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 });
 
+document.addEventListener("ancestorsChanged", () => {
+	const headerElement = document.body.querySelector("h2");
+	if (!headerElement) return;
+	if (maxAncestors == 1) {
+		headerElement.innerText = "Large Primitive Sequence System";
+	} else {
+		headerElement.innerText = ("Great ").repeat(maxAncestors - 2) + "Grandparent Sequence System";
+	}
+});
+
 class notation {
 	static title = "Grandparent Sequence System";
 	static footer = "<a href='viewer.html'>Row Viewer</a>";
