@@ -11,27 +11,21 @@
 <body>
 	<script>
 		(function() {
-			var segments = window.location.pathname.split('/').filter(Boolean);
-			var params = new URLSearchParams(window.location.search);
-			var notationDir = params.get('notation');
-			if (!notationDir) {
-				var last = segments[segments.length - 1] || '';
-				if (last === '' || /\.[a-zA-Z0-9]+$/.test(last)) {
-					notationDir = decodeURIComponent(segments[segments.length - 2] || 'worm');
-				} else {
-					notationDir = decodeURIComponent(last);
-				}
-			}
-			var encodedNotation = encodeURIComponent(notationDir);
-
+			let segments = window.location.pathname.split('/').filter(Boolean);
+			let params = new URLSearchParams(window.location.search);
+			let notationDir = decodeURIComponent(segments[segments.length - 1] || 'worm');
+			let encodedNotation = encodeURIComponent(notationDir);	
+			let prefix = '/' + segments.slice(0, -1).join("/") + (segments.length > 1 ? '/' : '');
 			function addScript(src, cb) {
-				var s = document.createElement('script');
+				let s = document.createElement('script');
 				s.async = false;
 				s.src = src;
 				s.onerror = function() {
 					s.remove();
-					if (src !== '/worm/notation.js') {
-						addScript('/worm/notation.js', function() {
+					let fallback = prefix + 'worm/notation.js';
+					console.log(fallback);
+					if (src !== fallback) {
+						addScript(fallback, function() {
 							notation.missing = true;
 						});
 					}
@@ -42,7 +36,7 @@
 
 			// Load main.js first, then notation.js
 			addScript('/main.js', function() {
-				addScript('/' + encodedNotation + '/notation.js');
+				addScript(prefix + encodedNotation + '/notation.js');
 			});
 		})();
 	</script>
