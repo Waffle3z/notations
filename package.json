@@ -1,0 +1,9 @@
+{
+"name": "notations",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "node dev-server.mjs",
+		"dev:alt": "PORT=5510 node dev-server.mjs"
+	}
+}

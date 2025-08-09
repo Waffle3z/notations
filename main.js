@@ -228,6 +228,7 @@ function setIndentation(newIndentation) {
 	refreshIndentation();
 }
 
+
 function initialize() {
 	let titleElement = document.head.querySelector("title");
 	if (!titleElement) {
@@ -242,6 +243,9 @@ function initialize() {
 	if (notation.title) {
 		titleElement.textContent = notation.title;
 		headerElement.textContent = notation.header || notation.title;
+	} else if (notation.missing) {
+		titleElement.textContent = "404 🧇";
+		headerElement.textContent = "404 notation not found, here's worm instead"
 	}
 	let container = document.getElementById("container");
 	if (!container) {
@@ -325,7 +329,15 @@ function initialize() {
 		if (notation.footer) {
 			footer.innerHTML = notation.footer + " | ";
 		}
-		footer.innerHTML += "<a href='..'>Index</a>";
+		const indexLink = document.createElement("a");
+		indexLink.textContent = "Index";
+		let indexHref = "..";
+		const baseEl = document.querySelector("base");
+		if (baseEl && baseEl.href) {
+			indexHref = baseEl.href;
+		}
+		indexLink.setAttribute("href", indexHref);
+		footer.appendChild(indexLink);
 		document.body.appendChild(footer);
 	}
 	
@@ -375,4 +387,8 @@ function initialize() {
 	});
 }
 
-document.addEventListener("DOMContentLoaded", initialize);
+if (document.readyState === 'complete') {
+	initialize();
+} else {
+	window.addEventListener("load", initialize);
+}

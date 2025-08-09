@@ -1,13 +1,23 @@
 let maxAncestors = 2;
 let version = "default";
 const ancestorsChangedEvent = new Event("ancestorsChanged");
-document.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("load", () => {
 	const queryString = window.location.search;
 	const urlParams = new URLSearchParams(queryString);
 	const requestedAncestors = Number(urlParams.get("ancestors"));
 	if (urlParams.get("ancestors") != null && !isNaN(requestedAncestors) && requestedAncestors >= 1) {
 		maxAncestors = requestedAncestors;
 		document.dispatchEvent(ancestorsChangedEvent);
+	}
+});
+
+document.addEventListener("ancestorsChanged", () => {
+	const headerElement = document.body.querySelector("h2");
+	if (!headerElement) return;
+	if (maxAncestors == 1) {
+		headerElement.innerText = "Large Primitive Sequence System";
+	} else {
+		headerElement.innerText = ("Great ").repeat(maxAncestors - 2) + "Grandparent Sequence System";
 	}
 });
 

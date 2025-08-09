@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv='cache-control' content='no-cache'> 
+	<meta http-equiv='expires' content='0'> 
+	<meta http-equiv='pragma' content='no-cache'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" type="text/css" href="../styles.css">
+</head>
+<body>
+	<script>
+		(function() {
+			var segments = window.location.pathname.split('/').filter(Boolean);
+			var params = new URLSearchParams(window.location.search);
+			var notationDir = params.get('notation');
+			if (!notationDir) {
+				var last = segments[segments.length - 1] || '';
+				if (last === '' || /\.[a-zA-Z0-9]+$/.test(last)) {
+					notationDir = decodeURIComponent(segments[segments.length - 2] || 'worm');
+				} else {
+					notationDir = decodeURIComponent(last);
+				}
+			}
+			var encodedNotation = encodeURIComponent(notationDir);
+
+			function addScript(src, cb) {
+				var s = document.createElement('script');
+				s.async = false;
+				s.src = src;
+				s.onerror = function() {
+					s.remove();
+					if (src !== '/worm/notation.js') {
+						addScript('/worm/notation.js', function() {
+							notation.missing = true;
+						});
+					}
+				};
+				s.onload = function() { if (cb) cb(); };
+				document.body.appendChild(s);
+			}
+
+			// Load main.js first, then notation.js
+			addScript('/main.js', function() {
+				addScript('/' + encodedNotation + '/notation.js');
+			});
+		})();
+	</script>
+</body>
+</html>
+
+
