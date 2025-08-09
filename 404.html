@@ -35,7 +35,7 @@
 			}
 
 			// Load main.js first, then notation.js
-			addScript('/main.js', function() {
+			addScript(prefix + 'main.js', function() {
 				addScript(prefix + encodedNotation + '/notation.js');
 			});
 		})();
