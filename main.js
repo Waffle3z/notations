@@ -316,6 +316,7 @@ function initialize() {
 		}
 
 		const aliasesCheckbox = aliasesContainer.querySelector("#aliases");
+		settings.aliases = aliasesCheckbox.checked;
 		aliasesCheckbox.addEventListener('change', function() {
 			settings.aliases = aliasesCheckbox.checked;
 			refreshTerms();

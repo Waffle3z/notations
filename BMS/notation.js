@@ -137,6 +137,9 @@ class notation {
 			str = sequence.join(",");
 		} else {
 			str = notation.toString(settings.simplify ? matrixSimplify(matrix) : matrix);
+			if (settings.compress) {
+				str = str.replaceAll(")(", " ").replace("(", "").replace(")", "").replaceAll(",", "");
+			}
 		}
 		
 		if (settings.aliases) {
