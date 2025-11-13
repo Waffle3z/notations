@@ -57,10 +57,11 @@ function drawGraph(sets, labeled = true) {
 				else canvas[y][x] = '│';
 			}
 
-			for (let xx = Math.min(x, x2); xx < Math.max(x, x2); xx++) {
-				if (canvas[y2][xx] === '┤') canvas[y2][xx] = '┼';
-				else if (canvas[y2][xx] === '│') canvas[y2][xx] = '╫'; // bridge
-				else if (canvas[y2][xx] === '┘') canvas[y2][xx] = '┴';
+			let bridged = false;
+			for (let xx = Math.max(x, x2)-1; xx >= Math.min(x, x2); xx--) {
+				if (canvas[y2][xx] === '┤' && !bridged) canvas[y2][xx] = '┼';
+				else if (canvas[y2][xx] === '│') bridged = true; //canvas[y2][xx] = '╫';
+				else if (canvas[y2][xx] === '┘' && !bridged) canvas[y2][xx] = '┴';
 				else if (canvas[y2][xx] === '╷') canvas[y2][xx] = '┌';
 				else if (canvas[y2][xx] === ' ') canvas[y2][xx] = '─';
 			}
