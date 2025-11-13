@@ -1,4 +1,4 @@
-function drawGraph(sets) {
+function drawGraph(sets, labeled = true) {
 	sets = sets.map(x => x.toSorted((a, b) => b - a));
 	const n = sets.length;
 	const levels = [];
@@ -21,8 +21,8 @@ function drawGraph(sets) {
 	const maxLevel = Math.max(...levels);
 
 	// Adjust spacing to accommodate multi-digit node labels.
-	const maxIndexDigits = String(n - 1).length || 1;
-	const horizontalSpacing = Math.max(3, maxIndexDigits);
+	const maxIndexDigits = !labeled ? 1 : String(n - 1).length || 1;
+	const horizontalSpacing = Math.max(2, maxIndexDigits) + 1;
 
 	const width = n === 0 ? 0 : (n - 1) * horizontalSpacing + maxIndexDigits;
 	const height = maxLevel + 1;
@@ -33,32 +33,35 @@ function drawGraph(sets) {
 		const x = i * horizontalSpacing;
 
 		// Write node index, supporting multi-digit labels.
-		const label = String(i);
-		for (let k = 0; k < label.length; k++) {
-			if (x + k < width) {
-				canvas[topY - 1][x + k] = label[k];
+		if (labeled) {
+			const label = String(i);
+			for (let k = 0; k < label.length; k++) {
+				let x2 = x + k - label.length + 1;
+				if (x2 < width) {
+					canvas[topY - 1][x2] = label[k];
+				}
 			}
+		} else {
+			canvas[topY-1][x] = '╷';
 		}
 
 		for (const p of sets[i]) {
 			const y2 = height - 1 - levels[p];
 			const x2 = p * horizontalSpacing;
 
-			// Starting column for the vertical/connector under the (possibly multi-digit) label.
-			const vx = Math.min(x + (String(i).length - 1), width - 1);
-
-			canvas[y2][vx] = '┘';
+			canvas[y2][x] = '┘';
 
 			for (let y = Math.min(topY, y2); y < Math.max(topY, y2); y++) {
-				const cur = canvas[y][vx];
-				if (cur === '┘' || cur === '┤') canvas[y][vx] = '┤';
-				else canvas[y][vx] = '│';
+				const cur = canvas[y][x];
+				if (cur === '┘' || cur === '┤') canvas[y][x] = '┤';
+				else canvas[y][x] = '│';
 			}
 
-			for (let xx = Math.min(vx, x2) + 1; xx < Math.max(vx, x2); xx++) {
+			for (let xx = Math.min(x, x2); xx < Math.max(x, x2); xx++) {
 				if (canvas[y2][xx] === '┤') canvas[y2][xx] = '┼';
 				else if (canvas[y2][xx] === '│') canvas[y2][xx] = '╫'; // bridge
 				else if (canvas[y2][xx] === '┘') canvas[y2][xx] = '┴';
+				else if (canvas[y2][xx] === '╷') canvas[y2][xx] = '┌';
 				else if (canvas[y2][xx] === ' ') canvas[y2][xx] = '─';
 			}
 
