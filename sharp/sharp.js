@@ -66,3 +66,18 @@ function drawGraph(sets) {
 
 	return [canvas.map(r => r.join('')).join('\n'), sequence.join(","), matrixString];
 }
+
+function matrixToSets(matrix) {
+	let sets = [];
+	for (let i = 0; i < matrix.length; i++) {
+		let s = [];
+		let j = i;
+		for (let k = 0; k < matrix[i].length; k++) {
+			j = matrix.findLastIndex((v, z) => z < j && matrix[z][0] < matrix[i][k]);
+			if (j == -1) break;
+			s.push(j);
+		}
+		sets.push(s);
+	}
+	return sets;
+}

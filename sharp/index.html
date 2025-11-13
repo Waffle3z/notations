@@ -116,19 +116,23 @@
 		<div id="settings">
 			<fieldset>
 				<legend>Input Sets</legend>
-				<textarea id="setsInput" rows="16">
+				<textarea id="setsInput" rows="8">
 [[],[0],[],[2]]
 [[],[0],[1],[2]]
 [[],[0],[1,0]]
-[[],[0],[1,0],[1,0],[1],[4,1],[4,0],[4],[7,4],[7,0],[7],[10,7],[10,0]]
-[[],[0],[1,0],[1,0],[1],[4,1],[4,1]]
-[[],[0],[1,0],[2],[3,0],[3,0]]
-[[],[0],[1,0],[2,1],[3,2]]
-[[],[0],[1,0],[2,1,0],[3,2,1,0]]
-</textarea>
-			</fieldset>
+[[],[0],[1,0],[1,0],[1],[4,1],[4,0],[4],[7,4],[7,0],[7],[10,7],[10,0]]</textarea>
+		</fieldset>
 
-			<div id="error"></div>
+		<fieldset>
+				<legend>Input Matrices</legend>
+				<textarea id="matrixInput" rows="8">
+(0)(1)(2,1)(2,1)(2)(3,2)(3,2)
+(0)(1)(2,1)(3,1)
+(0)(1)(2,1)(3,2)
+(0)(1)(2,1)(3,2,1)</textarea>
+		</fieldset>
+
+		<div id="error"></div>
 		</div>
 
 		<div id="output-container">
@@ -138,6 +142,54 @@
 
 	<script src="sharp.js"></script>
 	<script>
+		function parseMatrixLike(line) {
+		  const trimmed = line.trim();
+		  if (!trimmed) throw new Error("Empty line");
+
+		  // If it looks like JSON, parse as such.
+		  if (trimmed[0] === '[') {
+		    const parsed = JSON.parse(trimmed);
+		    if (!Array.isArray(parsed)) {
+		      throw new Error("Matrix JSON must be an array of arrays.");
+		    }
+		    parsed.forEach((row, i) => {
+		      if (!Array.isArray(row)) {
+		        throw new Error("Row " + i + " in matrix JSON is not an array.");
+		      }
+		      row.forEach((v, j) => {
+		        if (!Number.isInteger(v) || v < 0) {
+		          throw new Error("Invalid entry at [" + i + "][" + j + "], must be non-negative integer.");
+		        }
+		      });
+		    });
+		    return parsed;
+		  }
+
+		  // Parse parenthesized form: (a,b)(c)(d,e,...)
+		  // Allow spaces inside.
+		  const parts = trimmed.match(/\([^()]*\)/g);
+		  if (!parts) {
+		    throw new Error("Invalid matrix format.");
+		  }
+		  const matrix = parts.map((part, idx) => {
+		    const inner = part.slice(1, -1).trim();
+		    if (inner === "") {
+		      return [];
+		    }
+		    const nums = inner.split(",").map(s => s.trim()).filter(s => s.length > 0);
+		    if (nums.length === 0) return [];
+		    const row = nums.map((s, j) => {
+		      const v = Number(s);
+		      if (!Number.isInteger(v) || v < 0) {
+		        throw new Error("Invalid entry in group " + (idx + 1) + ": '" + s + "'");
+		      }
+		      return v;
+		    });
+		    return row;
+		  });
+		  return matrix;
+		}
+
 		function parseLineToSets(raw) {
 			const trimmed = raw.trim();
 			if (!trimmed) {
@@ -170,94 +222,172 @@
 		}
 
 		function renderAll() {
-			const inputEl = document.getElementById("setsInput");
+			const setsInputEl = document.getElementById("setsInput");
+			const matrixInputEl = document.getElementById("matrixInput");
 			const errEl = document.getElementById("error");
 			const resultsEl = document.getElementById("results");
 
 			errEl.textContent = "";
 			resultsEl.innerHTML = "";
 
-			const lines = inputEl.value.split(/\r?\n/);
+			const blocks = [];
 
-			const hasAnyNonEmpty = lines.some(line => line.trim() !== "");
-			if (!hasAnyNonEmpty) {
-				return; // nothing to render; no error
+			// 1. Handle sets-input lines.
+			if (setsInputEl) {
+				const setLines = setsInputEl.value.split(/\r?\n/);
+				setLines.forEach((line, index) => {
+					const trimmed = line.trim();
+					if (!trimmed) return;
+
+					const block = document.createElement("div");
+					block.style.marginBottom = "16px";
+
+					if (blocks.length > 0) {
+						const separator = document.createElement("div");
+						separator.style.borderTop = "1px solid #444";
+						separator.style.margin = "10px 0";
+						block.appendChild(separator);
+					}
+
+					const header = document.createElement("div");
+					header.className = "output-line";
+					header.textContent = trimmed;
+					block.appendChild(header);
+
+					try {
+						const sets = parseLineToSets(trimmed);
+						const [graphText, sequence, matrixStr] = drawGraph(sets);
+
+						const seqDiv = document.createElement("div");
+						seqDiv.className = "output-line";
+						const seqLabel = document.createElement("span");
+						seqLabel.className = "label-inline";
+						seqLabel.textContent = "Sequence:";
+						const seqVal = document.createElement("span");
+						seqVal.textContent = sequence;
+						seqDiv.appendChild(seqLabel);
+						seqDiv.appendChild(seqVal);
+						block.appendChild(seqDiv);
+
+						const matDiv = document.createElement("div");
+						matDiv.className = "output-line";
+						const matLabel = document.createElement("span");
+						matLabel.className = "label-inline";
+						matLabel.textContent = "Matrix:";
+						const matVal = document.createElement("span");
+						matVal.textContent = matrixStr;
+						matDiv.appendChild(matLabel);
+						matDiv.appendChild(matVal);
+						block.appendChild(matDiv);
+
+						const pre = document.createElement("pre");
+						pre.style.whiteSpace = "pre";
+						pre.style.fontFamily = "Consolas, monospace";
+						pre.style.backgroundColor = "#111";
+						pre.style.border = "1px solid #555";
+						pre.style.padding = "8px";
+						pre.style.overflowX = "auto";
+						pre.textContent = graphText;
+						block.appendChild(pre);
+					} catch (e) {
+						const errLine = document.createElement("div");
+						errLine.className = "output-line";
+						errLine.style.color = "#ff6666";
+						errLine.textContent = "Error on sets line " + (index + 1) + ": " + e.message;
+						block.appendChild(errLine);
+					}
+
+					blocks.push(block);
+				});
 			}
 
-			lines.forEach((line, index) => {
-				const trimmed = line.trim();
-				if (!trimmed) {
-					return; // skip blank lines
-				}
+			// 2. Handle matrix-input lines, appended after sets results.
+			if (matrixInputEl) {
+				const matrixLines = matrixInputEl.value.split(/\r?\n/);
+				matrixLines.forEach((line, index) => {
+					const trimmed = line.trim();
+					if (!trimmed) return;
 
-				const block = document.createElement("div");
-				block.style.marginBottom = "16px";
+					const block = document.createElement("div");
+					block.style.marginBottom = "16px";
 
-				// Horizontal separator between displays, except before the first one
-				if (resultsEl.children.length > 0) {
-					const separator = document.createElement("div");
-					separator.style.borderTop = "1px solid #444";
-					separator.style.margin = "10px 0";
-					block.appendChild(separator);
-				}
+					if (blocks.length > 0) {
+						const separator = document.createElement("div");
+						separator.style.borderTop = "1px solid #444";
+						separator.style.margin = "10px 0";
+						block.appendChild(separator);
+					}
 
-				const header = document.createElement("div");
-				header.className = "output-line";
-				header.textContent = trimmed;
-				block.appendChild(header);
+					const header = document.createElement("div");
+					header.className = "output-line";
+					header.textContent = trimmed;
+					block.appendChild(header);
 
-				try {
-					const sets = parseLineToSets(trimmed);
-					const [graphText, sequence, matrix] = drawGraph(sets);
+					try {
+						const matrix = parseMatrixLike(trimmed);
+						const sets = matrixToSets(matrix);
+						const [graphText, sequence, matrixStr] = drawGraph(sets);
 
-					const seqDiv = document.createElement("div");
-					seqDiv.className = "output-line";
-					const seqLabel = document.createElement("span");
-					seqLabel.className = "label-inline";
-					seqLabel.textContent = "Sequence:";
-					const seqVal = document.createElement("span");
-					seqVal.textContent = sequence;
-					seqDiv.appendChild(seqLabel);
-					seqDiv.appendChild(seqVal);
-					block.appendChild(seqDiv);
+						const setsDiv = document.createElement("div");
+						setsDiv.className = "output-line";
+						const setsLabel = document.createElement("span");
+						setsLabel.className = "label-inline";
+						setsLabel.textContent = "Sets:";
+						const setsVal = document.createElement("span");
+						setsVal.textContent = JSON.stringify(sets);
+						setsDiv.appendChild(setsLabel);
+						setsDiv.appendChild(setsVal);
+						block.appendChild(setsDiv);
 
-					const matDiv = document.createElement("div");
-					matDiv.className = "output-line";
-					const matLabel = document.createElement("span");
-					matLabel.className = "label-inline";
-					matLabel.textContent = "Matrix:";
-					const matVal = document.createElement("span");
-					matVal.textContent = matrix;
-					matDiv.appendChild(matLabel);
-					matDiv.appendChild(matVal);
-					block.appendChild(matDiv);
+						const seqDiv = document.createElement("div");
+						seqDiv.className = "output-line";
+						const seqLabel = document.createElement("span");
+						seqLabel.className = "label-inline";
+						seqLabel.textContent = "Sequence:";
+						const seqVal = document.createElement("span");
+						seqVal.textContent = sequence;
+						seqDiv.appendChild(seqLabel);
+						seqDiv.appendChild(seqVal);
+						block.appendChild(seqDiv);
 
-					const pre = document.createElement("pre");
-					pre.style.whiteSpace = "pre";
-					pre.style.fontFamily = "Consolas, monospace";
-					pre.style.backgroundColor = "#111";
-					pre.style.border = "1px solid #555";
-					pre.style.padding = "8px";
-					pre.style.overflowX = "auto";
-					pre.textContent = graphText;
-					block.appendChild(pre);
-				} catch (e) {
-					const errLine = document.createElement("div");
-					errLine.className = "output-line";
-					errLine.style.color = "#ff6666";
-					errLine.textContent = "Error on line " + (index + 1) + ": " + e.message;
-					block.appendChild(errLine);
-				}
+						const pre = document.createElement("pre");
+						pre.style.whiteSpace = "pre";
+						pre.style.fontFamily = "Consolas, monospace";
+						pre.style.backgroundColor = "#111";
+						pre.style.border = "1px solid #555";
+						pre.style.padding = "8px";
+						pre.style.overflowX = "auto";
+						pre.textContent = graphText;
+						block.appendChild(pre);
+					} catch (e) {
+						const errLine = document.createElement("div");
+						errLine.className = "output-line";
+						errLine.style.color = "#ff6666";
+						errLine.textContent = "Error on matrix line " + (index + 1) + ": " + e.message;
+						block.appendChild(errLine);
+					}
 
-				resultsEl.appendChild(block);
-			});
+					blocks.push(block);
+				});
+			}
+
+			// Append all blocks to results.
+			blocks.forEach(block => resultsEl.appendChild(block));
 		}
 
 		document.getElementById("setsInput").addEventListener("input", () => {
 			try {
 				renderAll();
 			} catch (e) {
-				// Defensive: never crash the whole page on unexpected errors.
+				const errEl = document.getElementById("error");
+				errEl.textContent = "Unexpected error: " + e.message;
+			}
+		});
+
+		document.getElementById("matrixInput").addEventListener("input", () => {
+			try {
+				renderAll();
+			} catch (e) {
 				const errEl = document.getElementById("error");
 				errEl.textContent = "Unexpected error: " + e.message;
 			}
