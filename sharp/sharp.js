@@ -56,7 +56,8 @@ function drawGraph(sets) {
 			}
 
 			for (let xx = Math.min(vx, x2) + 1; xx < Math.max(vx, x2); xx++) {
-				if (canvas[y2][xx] === '┤' || canvas[y2][xx] === '│') canvas[y2][xx] = '┼';
+				if (canvas[y2][xx] === '┤') canvas[y2][xx] = '┼';
+				else if (canvas[y2][xx] === '│') canvas[y2][xx] = '╫'; // bridge
 				else if (canvas[y2][xx] === '┘') canvas[y2][xx] = '┴';
 				else if (canvas[y2][xx] === ' ') canvas[y2][xx] = '─';
 			}
@@ -73,7 +74,7 @@ function matrixToSets(matrix) {
 		let s = [];
 		let j = i;
 		for (let k = 0; k < matrix[i].length; k++) {
-			j = matrix.findLastIndex((v, z) => z < j && matrix[z][0] < matrix[i][k]);
+			j = matrix.findLastIndex((v, z) => z < j && v[0] < matrix[i][k]);
 			if (j == -1) break;
 			s.push(j);
 		}
