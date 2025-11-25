@@ -113,7 +113,7 @@ class notation {
 			for (let j = 0; j < copy.length; j++) {
 				if (copy[j].ascending) {
 					for (let k = 0; k < i; k++) {
-						copy[j].unshift({distance: copy[j][0].distance, delta: 1});
+						copy[j].push({distance: copy[j].at(-1).distance, delta: 1}, copy[j].pop());
 					}
 				}
 				for (let v of copy[j]) {
@@ -127,7 +127,7 @@ class notation {
 	}
 
 	static isSuccessor(matrix) {
-		return matrix.length == 0 || matrix.at(-1).length == 0;
+		return matrix.length == 0 || matrix.at(-1).length == 0 || matrix.at(-1).at(-1) == 0;
 	}
 	
 	static toString(m) {
