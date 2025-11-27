@@ -354,7 +354,9 @@ function initialize() {
 	document.addEventListener("mouseup", (event) => {
 		const tree = document.getElementById("tree");
 		if (tree.contains(event.target) || event.target == document.body) {
-			selectedButton.focus();
+			if (window.getSelection().toString() === '') { // no selected text
+				selectedButton.focus();
+			}
 		}
 	});
 
@@ -378,6 +380,8 @@ function initialize() {
 		} else if (event.key === "ArrowRight") { // expand and move selection down
 			expandButton(selectedButton);
 			moveSelectionDown();
+		} else if ((event.ctrlKey || event.metaKey) && event.key === 'c' && window.getSelection().toString() === '') {
+			navigator.clipboard.writeText(selectedButton.innerText);
 		} else {
 			handled = false;
 		}
