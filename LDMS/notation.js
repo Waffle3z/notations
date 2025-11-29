@@ -59,6 +59,7 @@ function deepcopy(pm) {
 class notation {
 	static title = "LDMS";
 	static header = "Large Descending Matrix System";
+	static weaklyAscending = false;
 
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
@@ -99,8 +100,8 @@ class notation {
 			for (let i = rootIndex; i < out.length; i++) {
 				let parentIndex = i - out[i].at(-1).distance;
 				let isLonger = out[parentIndex].length < out[i].length || out[parentIndex][out[i].length-1].distance == 0;
-
-				if (isLonger && out[parentIndex].ascending) out[i].ascending = true;
+				let goodLength = notation.weaklyAscending ? isLonger : out[i].length >= cutNode.length - 1;
+				if (goodLength && out[parentIndex].ascending) out[i].ascending = true;
 			}
 		}
 		let parentColumn = pm[rootIndex][lastColumnIndex];
@@ -147,4 +148,8 @@ class notation {
 		}
 		return matrix;
 	}
+
+	static parameters = [
+		{type: "checkbox", label: "Weakly ascending", id: "weaklyAscending"}
+	]
 };

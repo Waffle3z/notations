@@ -322,6 +322,39 @@ function initialize() {
 			refreshTerms();
 		});
 	}
+	if (notation.parameters) {
+		for (let param of notation.parameters) {
+			let container;
+			if (param.legend) {
+				container = document.createElement("fieldset");
+				let legend = document.createElement("legend");
+				legend.textContent = param.legend;
+				container.appendChild(legend);
+			} else {
+				container = document.createElement("div");
+			}
+			settingsContainer.appendChild(container);
+
+			let inputs = param.inputs || [param];
+			for (let input of inputs) {
+				let div = document.createElement("div");
+				let inp = document.createElement("input");
+				inp.type = input.type;
+				inp.id = input.id;
+				if (input.name) inp.name = input.name;
+				if (input.type === "checkbox") {
+					inp.checked = notation[input.id];
+					inp.addEventListener('change', () => notation[input.id] = inp.checked);
+				}
+				div.appendChild(inp);
+				let label = document.createElement("label");
+				label.setAttribute("for", input.id);
+				label.textContent = ' ' + input.label;
+				div.appendChild(label);
+				container.appendChild(div);
+			}
+		}
+	}
 
 	let footer = document.getElementById("footer");
 	if (!footer) {

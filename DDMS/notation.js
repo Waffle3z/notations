@@ -64,9 +64,12 @@ function deepcopyterm(v) {
 	return a;
 }
 
+let weaklyAscending = false;
+
 class notation {
 	static title = "DDMS";
 	static header = "Diagonal Descending Matrix System";
+	static weaklyAscending = false;
 
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
@@ -124,7 +127,8 @@ class notation {
 			for (let i = rootIndex; i < out.length; i++) {
 				let parentIndex = i - out[i].at(-1).distance;
 				let isLonger = out[parentIndex].length < out[i].length || out[parentIndex][out[i].length-1].distance == 0;
-				if (isLonger && out[parentIndex].ascending) out[i].ascending = ascend;
+				let goodLength = notation.weaklyAscending ? isLonger : out[i].length >= cutNode.length - 1;
+				if (goodLength && out[parentIndex].ascending) out[i].ascending = ascend;
 			}
 		}
 		let parentColumn = pm[rootIndex][lastColumnIndex];
@@ -155,17 +159,6 @@ class notation {
 			}
 			out.push(...copy);
 		}
-		// delta > 1 is only allowed for extra columns
-		for (let i = 0; i < out.length; i++) {
-			for (let j = 0; j < out[i].length; j++) {
-				if (out[i][j].delta > 1) {
-					let parent = out[i-out[i][j].distance];
-					if (parent[j] && parent[j].distance != 0) {
-						out[i][j].delta = 1;
-					}
-				}
-			}
-		}
 		out.pop(); // remove last copy of the cut node in case it's a successor
 		return toMatrix(out);
 	}
@@ -191,4 +184,8 @@ class notation {
 		}
 		return matrix;
 	}
+
+	static parameters = [
+		{type: "checkbox", label: "Weakly ascending", id: "weaklyAscending"},
+	]
 };
