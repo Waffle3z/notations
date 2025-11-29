@@ -82,26 +82,26 @@ class notation {
 		let tail = out.slice(rootIndex + 1);
 		
 		let cutNode = tail.at(-1);
+		let rootNode = out[rootIndex];
 		let lastColumnIndex = cutNode.length - 1;
 		let lastColumn = cutNode[lastColumnIndex];
 		let lastColumnDistance = lastColumn.distance;
-		let ascend = (lastColumnIndex >= out[rootIndex].length || out[rootIndex][lastColumnIndex].distance == 0) ? lastColumn.delta - 1 : 0;
+		let getTermLength = (x) => x.length - (x[0].distance == 0 ? 1 : 0); // (0) has length 0
+		let ascend = lastColumnIndex >= getTermLength(rootNode) ? lastColumn.delta - 1 : 0;
 		if (ascend == 0) {
 			cutNode.pop();
-			let root = out[rootIndex];
-			for (let i = lastColumnIndex; i < root.length; i++) {
-				cutNode[i] = {distance: root[i].distance + lastColumnDistance, delta: root[i].delta};
+			for (let i = lastColumnIndex; i < rootNode.length; i++) {
+				cutNode[i] = {distance: rootNode[i].distance + lastColumnDistance, delta: rootNode[i].delta};
 			}
 		} else {
 			lastColumn.delta--;
-			out[rootIndex].ascending = true;
+			rootNode.ascending = true;
 			cutNode.ascending = true;
 			// descendants of an ascended term that have an extra column also ascend
 			for (let i = rootIndex; i < out.length; i++) {
 				let parentIndex = i - out[i].at(-1).distance;
-				let isLonger = out[parentIndex].length < out[i].length || out[parentIndex][out[i].length-1].distance == 0;
-				let goodLength = notation.weaklyAscending ? isLonger : out[i].length >= cutNode.length - 1;
-				if (goodLength && out[parentIndex].ascending) out[i].ascending = true;
+				let canAscend = getTermLength(out[i]) > getTermLength(notation.weaklyAscending ? out[parentIndex] : rootNode);
+				if (canAscend && out[parentIndex].ascending) out[i].ascending = true;
 			}
 		}
 		let parentColumn = pm[rootIndex][lastColumnIndex];
