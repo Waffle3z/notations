@@ -35,12 +35,12 @@ function toPointerMatrix(a) {
 	return pointerMatrix;
 }
 
-function toMatrix(a) {
+function toMatrix(pm) {
 	let matrix = [];
-	for (let i = 0; i < a.length; i++) {
+	for (let i = 0; i < pm.length; i++) {
 		matrix[i] = [];
-		for (let j = 0; j < a[i].length; j++) {
-			matrix[i][j] = a.delta == 0 ? 0 : (matrix[i-a[i][j].distance][j] || 0) + a[i][j].delta;
+		for (let j = 0; j < pm[i].length; j++) {
+			matrix[i][j] = pm.delta == 0 ? 0 : (matrix[i-pm[i][j].distance][j] || 0) + pm[i][j].delta;
 		}
 	}
 	return matrix;
