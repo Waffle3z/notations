@@ -184,6 +184,7 @@
 					gridContainer.style.overflowX = "auto";
 					gridContainer.style.display = "inline-block";
 					gridContainer.style.userSelect = "text";
+					gridContainer.style.position = "relative";
 					const rows = drawn.split("\n");
 					rows.forEach(row => {
 						const rowDiv = document.createElement("div");
@@ -211,6 +212,29 @@
 						}
 						gridContainer.appendChild(rowDiv);
 					});
+					const copyButton = document.createElement("button");
+					copyButton.textContent = "📋";
+					copyButton.style.position = "absolute";
+					copyButton.style.top = "5px";
+					copyButton.style.right = "0px";
+					copyButton.style.background = "#333";
+					copyButton.style.color = "#eee";
+					copyButton.style.border = "none";
+					copyButton.style.cursor = "pointer";
+					copyButton.style.fontSize = "12px";
+					copyButton.style.padding = "2px 2px";
+					copyButton.style.opacity = "0";
+					copyButton.style.transition = "opacity 0.1s";
+					copyButton.addEventListener("click", () => {
+						navigator.clipboard.writeText(drawn).catch(err => console.error('Copy failed', err));
+					});
+					copyButton.addEventListener("mousedown", () => copyButton.style.background = "#555");
+					copyButton.addEventListener("mouseup", () => copyButton.style.background = "#333");
+					copyButton.addEventListener("mouseenter", () => copyButton.style.background = "#444");
+					copyButton.addEventListener("mouseleave", () => copyButton.style.background = "#333");
+					gridContainer.addEventListener("mouseenter", () => copyButton.style.opacity = "1");
+					gridContainer.addEventListener("mouseleave", () => copyButton.style.opacity = "0");
+					gridContainer.appendChild(copyButton);
 					block.appendChild(gridContainer);
 				} catch (e) {
 					const errLine = document.createElement("div");
