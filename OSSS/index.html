@@ -148,8 +148,9 @@
 
 			const lines = inputEl.value.split(/\r?\n/);
 			lines.forEach((line, index) => {
-				const trimmed = line.trim();
+				let trimmed = line.trim();
 				if (!trimmed) return;
+				if (trimmed.at(-1) != ")") trimmed += ")";
 
 				const block = document.createElement("div");
 				block.style.marginBottom = "16px";

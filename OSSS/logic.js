@@ -15,8 +15,8 @@ function blockListToMatrix(a) {
 
 function matrixToBlockList(m, shortRows) {
 	return m.map((v, i) => {
-		if (v.length == 0) return i == 0 ? [0] : [0, 1];
-		let length = shortRows ? Math.max(0, ...v) + 1 : i
+		if (v.length == 0 && i == 0) return [0];
+		let length = shortRows ? Math.max(0, ...v) + 1 : i;
 		return [...Array(length + 1)].map((_, n) => v.includes(length - n) ? null : n).filter(n => n != null);
 	});
 }
