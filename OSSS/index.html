@@ -114,6 +114,9 @@
 			<input type="checkbox" id="numbersCheckbox" checked="true"> Numbers
 		</label>
 		<label>
+			<input type="checkbox" id="shortRowsCheckbox"> Short rows
+		</label>
+		<label>
 			Cell Size:<span id="cellSizeValue" style="display: inline-block; width: 20px; text-align: right;">16</span>px <input type="range" id="cellSize" value="16" min="8" max="32" step="1" style="vertical-align: middle;">
 		</label>
 
@@ -137,6 +140,8 @@
 			resultsEl.innerHTML = "";
 
 			const showNumbers = numbersCheckboxEl ? numbersCheckboxEl.checked : true;
+			const shortRowsCheckboxEl = document.getElementById("shortRowsCheckbox");
+			const shortRows = shortRowsCheckboxEl ? shortRowsCheckboxEl.checked : false;
 			const cellSizeEl = document.getElementById("cellSize");
 			const cellSize = parseInt(cellSizeEl.value) || 12;
 			const blocks = [];
@@ -161,9 +166,10 @@
 				block.appendChild(header);
 
 				try {
-					let matrix = matrixFromString(trimmed);
-					let blockList = blockListFromString(trimmed);
-					const drawn = drawArray(matrix, showNumbers);
+					let array = arrayFromString(trimmed);
+					let matrix = isBlockList(array) ? blockListToMatrix(array, shortRows) : array;
+					let blockList = isBlockList(array) ? array : matrixToBlockList(array, shortRows);
+					const drawn = drawArray(blockList, showNumbers, shortRows);
 
 					const invDiv = document.createElement("div");
 					invDiv.className = "output-line";
@@ -260,6 +266,15 @@
 		});
 
 		document.getElementById("numbersCheckbox").addEventListener("change", () => {
+			try {
+				renderAll();
+			} catch (e) {
+				const errEl = document.getElementById("error");
+				errEl.textContent = "Unexpected error: " + e.message;
+			}
+		});
+
+		document.getElementById("shortRowsCheckbox").addEventListener("change", () => {
 			try {
 				renderAll();
 			} catch (e) {

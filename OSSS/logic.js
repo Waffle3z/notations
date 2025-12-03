@@ -7,36 +7,37 @@ function arrayToString(m) {
 }
 
 function blockListToMatrix(a) {
-	return a.map((v, i) => [...Array(i)].map((_, n) => v.includes(n) ? null : i - n).filter(n => n));
+	return a.map((v, i) => {
+		let length = Math.max(0, ...a[i]);
+		return [...Array(length + 1)].map((_, n) => v.includes(n) ? null : length - n).filter(n => n != null);
+	});
 }
 
-function matrixToBlockList(m) {
-	return m.map((v, i) => [...Array(i + 1)].map((_, n) => v.includes(i - n) ? null : n).filter(n => n != null));
+function matrixToBlockList(m, shortRows) {
+	return m.map((v, i) => {
+		if (v.length == 0) return i == 0 ? [0] : [0, 1];
+		let length = shortRows ? Math.max(0, ...v) + 1 : i
+		return [...Array(length + 1)].map((_, n) => v.includes(length - n) ? null : n).filter(n => n != null);
+	});
 }
 
 function isBlockList(a) {
 	return a.length > 0 && a[0].length > 0;
 }
 
-function matrixFromString(s) {
-	let a = arrayFromString(s);
-	return isBlockList(a) ? blockListToMatrix(a) : a;
+function shortNumber(n) {
+	return n < 10 ? n : n-10 < 26 ? String.fromCharCode(65 + n - 10) : '?';
 }
 
-function blockListFromString(s) {
-	let a = arrayFromString(s);
-	return isBlockList(a) ? a : matrixToBlockList(a);
-}
-
-function drawArray(a, showNumbers = true) {
+function drawArray(a, showNumbers, shortRows) {
 	let rows = [];
-	let blockList = isBlockList(a) ? a : matrixToBlockList(a);
+	let blockList = isBlockList(a) ? a : matrixToBlockList(a, shortRows);
 	for (let i = 0; i < blockList.length; i++) {
-		rows.push([...Array(i+1)].map((_, n) => {
+		let size = Math.max(0, ...blockList[i]) + 1;
+		rows.push(size == 0 ? "" : [...Array(size)].map((_, n) => {
 			if (blockList[i].includes(n)) return "█";
 			if (!showNumbers) return " ";
-			let number = i - n;
-			return number < 10 ? number : number-10 < 26 ? String.fromCharCode(65 + number - 10) : '?';
+			return shortNumber(size - n - 1);
 		}).join(""));
 	}
 	return rows.join("\n");
