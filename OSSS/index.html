@@ -107,7 +107,7 @@
 (0)(0,1)(0,2)(0,1,3)
 (0)(0,1)(0,1,2)
 ()()(1)(2,1)(3,2,1)
-()()(1)(2)(3,1)
+()()(1)(2)(3,1)(3,1)
 ()()(1)(1)(1)</textarea>
 		</fieldset>
 		<label>
@@ -115,6 +115,9 @@
 		</label>
 		<label>
 			<input type="checkbox" id="shortRowsCheckbox"> Short rows
+		</label>
+		<label>
+			<input type="checkbox" id="coloringCheckbox" checked="true"> Coloring
 		</label>
 		<label>
 			Cell Size:<span id="cellSizeValue" style="display: inline-block; width: 20px; text-align: right;">16</span>px <input type="range" id="cellSize" value="16" min="8" max="32" step="1" style="vertical-align: middle;">
@@ -142,6 +145,8 @@
 			const showNumbers = numbersCheckboxEl ? numbersCheckboxEl.checked : true;
 			const shortRowsCheckboxEl = document.getElementById("shortRowsCheckbox");
 			const shortRows = shortRowsCheckboxEl ? shortRowsCheckboxEl.checked : false;
+			const coloringCheckboxEl = document.getElementById("coloringCheckbox");
+			const useColor = coloringCheckboxEl ? coloringCheckboxEl.checked : true;
 			const cellSizeEl = document.getElementById("cellSize");
 			const cellSize = parseInt(cellSizeEl.value) || 12;
 			const blocks = [];
@@ -162,16 +167,14 @@
 					block.appendChild(separator);
 				}
 
-				const header = document.createElement("div");
-				header.className = "output-line";
-				block.appendChild(header);
-
 				try {
 					let array = arrayFromString(trimmed);
 					let matrix = isBlockList(array) ? blockListToMatrix(array, shortRows) : array;
 					let blockList = isBlockList(array) ? array : matrixToBlockList(array, shortRows);
 					const drawn = drawArray(blockList, showNumbers, shortRows);
 
+					const header = document.createElement("div");
+					header.className = "output-line";
 					const invDiv = document.createElement("div");
 					invDiv.className = "output-line";
 					const invLabel = document.createElement("span");
@@ -179,24 +182,41 @@
 					invLabel.textContent = "Block list:";
 					const invVal = document.createElement("span");
 					invVal.textContent = arrayToString(blockList);
-					header.textContent = arrayToString(matrix);
+					const headerLabel = document.createElement("span");
+					headerLabel.className = "label-inline";
+					headerLabel.textContent = "Matrix:";
+					const headerVal = document.createElement("span");
+					headerVal.textContent = arrayToString(matrix);
+					if (shortRows && arrayToString(matrixToBlockList(matrix, shortRows)) != arrayToString(blockList)) invVal.textContent += " (invalid short row form)";
 					invDiv.appendChild(invLabel);
 					invDiv.appendChild(invVal);
-					block.appendChild(invDiv);
+					header.appendChild(headerLabel);
+					header.appendChild(headerVal);
+
+					const wrapper = document.createElement("div");
+					wrapper.style.display = "flex";
+					wrapper.style.flexDirection = "row";
+					wrapper.style.gap = "20px";
+					wrapper.style.alignItems = "flex-start";
+					const labelsDiv = document.createElement("div");
+					labelsDiv.appendChild(header);
+					labelsDiv.appendChild(invDiv);
 
 					const gridContainer = document.createElement("div");
 					gridContainer.style.backgroundColor = "#111";
 					gridContainer.style.border = "1px solid #555";
 					gridContainer.style.padding = "8px";
-					gridContainer.style.overflowX = "auto";
 					gridContainer.style.display = "inline-block";
 					gridContainer.style.userSelect = "text";
 					gridContainer.style.position = "relative";
 					const rows = drawn.split("\n");
-					rows.forEach(row => {
+					const [shaded, rootLocation] = getShadedRegion(blockList, shortRows);
+					for (let r = 0; r < rows.length; r++) {
+						const row = rows[r];
 						const rowDiv = document.createElement("div");
 						rowDiv.style.display = "flex";
-						for (let char of row) {
+						for (let c = 0; c < row.length; c++) {
+							const char = row[c];
 							const cell = document.createElement("span");
 							cell.style.display = "inline-block";
 							cell.style.width = cellSize + 'px';
@@ -210,15 +230,17 @@
 							cell.style.userSelect = "text";
 							if (char === "█") {
 								cell.style.backgroundColor = "#fff";
+								if (useColor && r == rootLocation[0] && c == rootLocation[1]) cell.style.backgroundColor = "#f55";
 								cell.textContent = "█";
 								cell.style.color = "transparent";
 							} else {
+								if (shaded[r][c] && useColor) cell.style.backgroundColor = "#44b";
 								cell.textContent = char;
 							}
 							rowDiv.appendChild(cell);
 						}
 						gridContainer.appendChild(rowDiv);
-					});
+					};
 					const copyButton = document.createElement("button");
 					copyButton.textContent = "📋";
 					copyButton.style.position = "absolute";
@@ -242,7 +264,9 @@
 					gridContainer.addEventListener("mouseenter", () => copyButton.style.opacity = "1");
 					gridContainer.addEventListener("mouseleave", () => copyButton.style.opacity = "0");
 					gridContainer.appendChild(copyButton);
-					block.appendChild(gridContainer);
+					wrapper.appendChild(gridContainer);
+					wrapper.appendChild(labelsDiv);
+					block.appendChild(wrapper);
 				} catch (e) {
 					const errLine = document.createElement("div");
 					errLine.className = "output-line";
@@ -276,6 +300,15 @@
 		});
 
 		document.getElementById("shortRowsCheckbox").addEventListener("change", () => {
+			try {
+				renderAll();
+			} catch (e) {
+				const errEl = document.getElementById("error");
+				errEl.textContent = "Unexpected error: " + e.message;
+			}
+		});
+
+		document.getElementById("coloringCheckbox").addEventListener("change", () => {
 			try {
 				renderAll();
 			} catch (e) {
