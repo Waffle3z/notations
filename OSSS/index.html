@@ -55,9 +55,8 @@
 			border-radius: 4px;
 			color: #eee;
 			border: none;
-			padding: 6px 10px;
 			cursor: pointer;
-			margin-right: 6px;
+			margin-right: 5px;
 			font-size: 13px;
 		}
 
@@ -103,10 +102,11 @@
 			<fieldset>
 				<legend>Input</legend>
 				<textarea id="input" rows="8">
-(0)(0,1)(0,2)(0,3)
-(0)(0,1)(0,2)(0,1,3)
-(0)(0,1)(0,1,2)
-()()(1)(2,1)(3,2,1)
+(0)(0,1)(0,2)(0,3)(0,4)(0,5)
+(0)(0,1)(0,2)(0,2,3)
+(0)(0,1)(0,2)(0,3)(0,2,3,4)
+()()()()
+()()(1)(2,1)(3,2)(4,3,1)
 ()()(1)(2)(3,1)(3,1)
 ()()(1)(1)(1)</textarea>
 		</fieldset>
@@ -133,14 +133,119 @@
 
 	<script src="logic.js"></script>
 	<script>
-		function renderAll() {
+		let expandNs = {};
+		function createGridContainer(drawn, shaded, rootLocation, copyText, useColor, cellSize) {
+			const gridContainer = document.createElement("div");
+			gridContainer.style.backgroundColor = "#111";
+			gridContainer.style.border = "1px solid #555";
+			gridContainer.style.padding = "8px";
+			gridContainer.style.display = "inline-block";
+			gridContainer.style.userSelect = "text";
+			gridContainer.style.position = "relative";
+			const rows = drawn.split("\n");
+			for (let r = 0; r < rows.length; r++) {
+				const row = rows[r];
+				const rowDiv = document.createElement("div");
+				rowDiv.style.display = "flex";
+				for (let c = 0; c < row.length; c++) {
+					const char = row[c];
+					const cell = document.createElement("span");
+					cell.style.display = "inline-block";
+					cell.style.width = cellSize + 'px';
+					cell.style.height = cellSize + 'px';
+					cell.style.fontFamily = '"Fira Code", monospace';
+					cell.style.fontSize = (cellSize * 0.8) + 'px';
+					cell.style.lineHeight = cellSize + 'px';
+					cell.style.textAlign = "center";
+					cell.style.verticalAlign = "middle";
+					cell.style.color = "#eee";
+					cell.style.userSelect = "text";
+					if (char === "█") {
+						cell.style.backgroundColor = "#fff";
+						if (useColor && r == rootLocation[0] && c == rootLocation[1]) cell.style.backgroundColor = "#f55";
+						cell.textContent = "█";
+						cell.style.color = "transparent";
+					} else {
+						if (shaded[r][c] && useColor) cell.style.backgroundColor = "#44b";
+						cell.textContent = char;
+					}
+					rowDiv.appendChild(cell);
+				}
+				gridContainer.appendChild(rowDiv);
+			}
+			const copyButton = document.createElement("button");
+			copyButton.textContent = "📋";
+			copyButton.style.position = "absolute";
+			copyButton.style.top = "5px";
+			copyButton.style.right = "0px";
+			copyButton.style.background = "#333";
+			copyButton.style.color = "#eee";
+			copyButton.style.border = "none";
+			copyButton.style.cursor = "pointer";
+			copyButton.style.fontSize = "12px";
+			copyButton.style.padding = "2px 2px";
+			copyButton.style.opacity = "0";
+			copyButton.style.transition = "opacity 0.1s";
+			copyButton.addEventListener("click", () => {
+				navigator.clipboard.writeText(copyText).catch(err => console.error('Copy failed', err));
+			});
+			copyButton.addEventListener("mousedown", () => copyButton.style.background = "#555");
+			copyButton.addEventListener("mouseup", () => copyButton.style.background = "#333");
+			copyButton.addEventListener("mouseenter", () => copyButton.style.background = "#444");
+			copyButton.addEventListener("mouseleave", () => copyButton.style.background = "#333");
+			gridContainer.addEventListener("mouseenter", () => copyButton.style.opacity = "1");
+			gridContainer.addEventListener("mouseleave", () => copyButton.style.opacity = "0");
+			gridContainer.appendChild(copyButton);
+			return gridContainer;
+		}
+		function addExpandDiv(index, level, matrix) {
+			if (isSuccessor(matrix)) return null;
+			const expandDiv = document.createElement("div");
+			expandDiv.className = "output-line";
+			expandDiv.style.display = "flex";
+			expandDiv.style.flexDirection = "column";
+			expandDiv.style.alignItems = "center";
+			const n = expandNs[index][level] || 0;
+			const minusBtn = document.createElement("button");
+			minusBtn.textContent = "-";
+			minusBtn.style.width = '20px';
+			minusBtn.style.height = '20px';
+			minusBtn.style.marginRight = '0px';
+			const nSpan = document.createElement("span");
+			nSpan.textContent = n > 0 ? n : "";
+			nSpan.style.margin = "6px 0";
+			const plusBtn = document.createElement("button");
+			plusBtn.textContent = "+";
+			plusBtn.style.width = '20px';
+			plusBtn.style.height = '20px';
+			plusBtn.style.marginRight = '0px';
+			expandDiv.appendChild(plusBtn);
+			if (n > 0) {
+				expandDiv.appendChild(nSpan);
+				expandDiv.appendChild(minusBtn);
+			}
+			minusBtn.addEventListener("click", () => {
+				if (expandNs[index][level] > 0) {
+					expandNs[index][level]--;
+					expandNs[index] = expandNs[index].slice(0, level + 1);
+					renderBlock(index);
+				}
+			});
+			plusBtn.addEventListener("click", () => {
+				if (level == expandNs[index].length) {
+					expandNs[index].push(1);
+				} else {
+					expandNs[index][level] = (expandNs[index][level] || 0) + 1;
+				}
+				expandNs[index] = expandNs[index].slice(0, level + 1);
+				renderBlock(index);
+			});
+			return expandDiv;
+		}
+		function renderBlock(index) {
 			const inputEl = document.getElementById("input");
 			const numbersCheckboxEl = document.getElementById("numbersCheckbox");
-			const errEl = document.getElementById("error");
 			const resultsEl = document.getElementById("results");
-
-			errEl.textContent = "";
-			resultsEl.innerHTML = "";
 
 			const showNumbers = numbersCheckboxEl ? numbersCheckboxEl.checked : true;
 			const shortRowsCheckboxEl = document.getElementById("shortRowsCheckbox");
@@ -149,139 +254,161 @@
 			const useColor = coloringCheckboxEl ? coloringCheckboxEl.checked : true;
 			const cellSizeEl = document.getElementById("cellSize");
 			const cellSize = parseInt(cellSizeEl.value) || 12;
-			const blocks = [];
+			const lines = inputEl.value.split(/\r?\n/);
+			let trimmed = lines[index].trim();
+			if (!trimmed) return;
+			if (trimmed.at(-1) != ")") trimmed += ")";
 
+			const block = document.createElement("div");
+			block.style.marginBottom = "10px";
+
+			if (index > 0) {
+				const separator = document.createElement("div");
+				separator.style.borderTop = "1px solid #444";
+				separator.style.margin = "10px 0";
+				block.appendChild(separator);
+			}
+
+			try {
+				let array = arrayFromString(trimmed);
+				let matrix = isBlockList(array) ? blockListToMatrix(array, shortRows) : array;
+				let blockList = isBlockList(array) ? array : matrixToBlockList(array, shortRows);
+				const drawn = drawArray(blockList, showNumbers, shortRows);
+
+				const header = document.createElement("div");
+				header.className = "output-line";
+				const invDiv = document.createElement("div");
+				invDiv.className = "output-line";
+				const invLabel = document.createElement("span");
+				invLabel.className = "label-inline";
+				invLabel.textContent = "Block list:";
+				const invVal = document.createElement("span");
+				invVal.textContent = arrayToString(blockList);
+				const headerLabel = document.createElement("span");
+				headerLabel.className = "label-inline";
+				headerLabel.textContent = "Matrix:";
+				const headerVal = document.createElement("span");
+				headerVal.textContent = arrayToString(matrix);
+				if (shortRows && arrayToString(matrixToBlockList(matrix, shortRows)) != arrayToString(blockList)) invVal.textContent += " (invalid short row form)";
+				invDiv.appendChild(invLabel);
+				invDiv.appendChild(invVal);
+				header.appendChild(headerLabel);
+				header.appendChild(headerVal);
+
+				if (!expandNs[index]) expandNs[index] = [];
+				const [shaded, rootLocation] = getShadedRegion(blockList, shortRows);
+				let currentBlockList = blockList;
+				let currentMatrix = matrix;
+				let currentDrawn = drawn;
+				let currentShaded = shaded;
+				let currentRootLocation = rootLocation;
+
+				let maxRows = drawn.split("\n").length;
+				const wrapper = document.createElement("div");
+				wrapper.className = "output-wrapper";
+				wrapper.style.display = "flex";
+				wrapper.style.flexDirection = "row";
+				wrapper.style.gap = "5px";
+				wrapper.style.alignItems = "flex-start";
+				wrapper.style.overflowX = "auto";
+				const labelsDiv = document.createElement("div");
+				labelsDiv.appendChild(header);
+				labelsDiv.appendChild(invDiv);
+
+				wrapper.appendChild(createGridContainer(currentDrawn, currentShaded, currentRootLocation, currentDrawn, useColor, cellSize));
+
+				const expandDiv0 = addExpandDiv(index, 0, matrix);
+				if (expandDiv0) wrapper.appendChild(expandDiv0);
+
+				// Loop for each expansion level
+				for (let lvl = 0; lvl < expandNs[index].length; lvl++) {
+					if (expandNs[index][lvl] > 0) {
+						currentBlockList = expand(currentBlockList, shortRows, expandNs[index][lvl]);
+						currentMatrix = isBlockList(currentBlockList) ? blockListToMatrix(currentBlockList) : currentBlockList;
+						currentDrawn = drawArray(currentBlockList, showNumbers, shortRows);
+						maxRows = Math.max(maxRows, currentDrawn.split("\n").length);
+						[currentShaded, currentRootLocation] = getShadedRegion(currentBlockList, shortRows);
+						wrapper.appendChild(createGridContainer(currentDrawn, currentShaded, currentRootLocation, currentDrawn, useColor, cellSize));
+
+						// Add labels for this level
+						const levelLabelsDiv = document.createElement("div");
+						const levelHeader = document.createElement("div");
+						levelHeader.className = "output-line";
+						const levelInvDiv = document.createElement("div");
+						levelInvDiv.className = "output-line";
+						const levelInvLabel = document.createElement("span");
+						levelInvLabel.className = "label-inline";
+						levelInvLabel.textContent = `Block list ${lvl + 2}:`;
+						const levelInvVal = document.createElement("span");
+						levelInvVal.textContent = arrayToString(currentBlockList);
+						if (shortRows && arrayToString(matrixToBlockList(currentMatrix, shortRows)) != arrayToString(currentBlockList)) levelInvVal.textContent += " (invalid short row form)";
+						const levelHeaderLabel = document.createElement("span");
+						levelHeaderLabel.className = "label-inline";
+						levelHeaderLabel.textContent = `Matrix ${lvl + 2}:`;
+						const levelHeaderVal = document.createElement("span");
+						levelHeaderVal.textContent = arrayToString(currentMatrix);
+						levelInvDiv.appendChild(levelInvLabel);
+						levelInvDiv.appendChild(levelInvVal);
+						levelHeader.appendChild(levelHeaderLabel);
+						levelHeader.appendChild(levelHeaderVal);
+						levelLabelsDiv.appendChild(levelHeader);
+						levelLabelsDiv.appendChild(levelInvDiv);
+						labelsDiv.appendChild(levelLabelsDiv);
+
+						const nextExpandDiv = addExpandDiv(index, lvl + 1, currentMatrix);
+						if (nextExpandDiv) wrapper.appendChild(nextExpandDiv);
+					}
+				}
+
+				labelsDiv.style.maxHeight = (maxRows * cellSize + 20) + "px";
+				labelsDiv.style.overflowY = "auto";
+				labelsDiv.style.minWidth = "250px";
+				labelsDiv.style.maxWidth = "400px";
+				labelsDiv.style.flexShrink = "0";
+				wrapper.appendChild(labelsDiv);
+				block.appendChild(wrapper);
+			} catch (e) {
+				const errLine = document.createElement("div");
+				errLine.className = "output-line";
+				errLine.style.color = "#ff6666";
+				errLine.textContent = "Error on line " + (index + 1) + ": " + e.message;
+				block.appendChild(errLine);
+			}
+
+			let savedScrollLeft = 0;
+			if (resultsEl.children[index]) {
+				const oldWrapper = resultsEl.children[index].querySelector('.output-wrapper');
+				if (oldWrapper) {
+					savedScrollLeft = oldWrapper.scrollLeft;
+				}
+			}
+
+			if (resultsEl.children[index]) {
+				resultsEl.replaceChild(block, resultsEl.children[index]);
+			} else {
+				resultsEl.appendChild(block);
+			}
+
+			const newWrapper = block.querySelector('.output-wrapper');
+			if (newWrapper) {
+				newWrapper.scrollLeft = savedScrollLeft;
+			}
+		}
+
+		function renderAll() {
+			const inputEl = document.getElementById("input");
+			const errEl = document.getElementById("error");
+			const resultsEl = document.getElementById("results");
+			errEl.textContent = "";
+			resultsEl.innerHTML = "";
 			const lines = inputEl.value.split(/\r?\n/);
 			lines.forEach((line, index) => {
-				let trimmed = line.trim();
-				if (!trimmed) return;
-				if (trimmed.at(-1) != ")") trimmed += ")";
-
-				const block = document.createElement("div");
-				block.style.marginBottom = "16px";
-
-				if (blocks.length > 0) {
-					const separator = document.createElement("div");
-					separator.style.borderTop = "1px solid #444";
-					separator.style.margin = "10px 0";
-					block.appendChild(separator);
-				}
-
-				try {
-					let array = arrayFromString(trimmed);
-					let matrix = isBlockList(array) ? blockListToMatrix(array, shortRows) : array;
-					let blockList = isBlockList(array) ? array : matrixToBlockList(array, shortRows);
-					const drawn = drawArray(blockList, showNumbers, shortRows);
-
-					const header = document.createElement("div");
-					header.className = "output-line";
-					const invDiv = document.createElement("div");
-					invDiv.className = "output-line";
-					const invLabel = document.createElement("span");
-					invLabel.className = "label-inline";
-					invLabel.textContent = "Block list:";
-					const invVal = document.createElement("span");
-					invVal.textContent = arrayToString(blockList);
-					const headerLabel = document.createElement("span");
-					headerLabel.className = "label-inline";
-					headerLabel.textContent = "Matrix:";
-					const headerVal = document.createElement("span");
-					headerVal.textContent = arrayToString(matrix);
-					if (shortRows && arrayToString(matrixToBlockList(matrix, shortRows)) != arrayToString(blockList)) invVal.textContent += " (invalid short row form)";
-					invDiv.appendChild(invLabel);
-					invDiv.appendChild(invVal);
-					header.appendChild(headerLabel);
-					header.appendChild(headerVal);
-
-					const wrapper = document.createElement("div");
-					wrapper.style.display = "flex";
-					wrapper.style.flexDirection = "row";
-					wrapper.style.gap = "20px";
-					wrapper.style.alignItems = "flex-start";
-					const labelsDiv = document.createElement("div");
-					labelsDiv.appendChild(header);
-					labelsDiv.appendChild(invDiv);
-
-					const gridContainer = document.createElement("div");
-					gridContainer.style.backgroundColor = "#111";
-					gridContainer.style.border = "1px solid #555";
-					gridContainer.style.padding = "8px";
-					gridContainer.style.display = "inline-block";
-					gridContainer.style.userSelect = "text";
-					gridContainer.style.position = "relative";
-					const rows = drawn.split("\n");
-					const [shaded, rootLocation] = getShadedRegion(blockList, shortRows);
-					for (let r = 0; r < rows.length; r++) {
-						const row = rows[r];
-						const rowDiv = document.createElement("div");
-						rowDiv.style.display = "flex";
-						for (let c = 0; c < row.length; c++) {
-							const char = row[c];
-							const cell = document.createElement("span");
-							cell.style.display = "inline-block";
-							cell.style.width = cellSize + 'px';
-							cell.style.height = cellSize + 'px';
-							cell.style.fontFamily = '"Fira Code", monospace';
-							cell.style.fontSize = (cellSize * 0.8) + 'px';
-							cell.style.lineHeight = cellSize + 'px';
-							cell.style.textAlign = "center";
-							cell.style.verticalAlign = "middle";
-							cell.style.color = "#eee";
-							cell.style.userSelect = "text";
-							if (char === "█") {
-								cell.style.backgroundColor = "#fff";
-								if (useColor && r == rootLocation[0] && c == rootLocation[1]) cell.style.backgroundColor = "#f55";
-								cell.textContent = "█";
-								cell.style.color = "transparent";
-							} else {
-								if (shaded[r][c] && useColor) cell.style.backgroundColor = "#44b";
-								cell.textContent = char;
-							}
-							rowDiv.appendChild(cell);
-						}
-						gridContainer.appendChild(rowDiv);
-					};
-					const copyButton = document.createElement("button");
-					copyButton.textContent = "📋";
-					copyButton.style.position = "absolute";
-					copyButton.style.top = "5px";
-					copyButton.style.right = "0px";
-					copyButton.style.background = "#333";
-					copyButton.style.color = "#eee";
-					copyButton.style.border = "none";
-					copyButton.style.cursor = "pointer";
-					copyButton.style.fontSize = "12px";
-					copyButton.style.padding = "2px 2px";
-					copyButton.style.opacity = "0";
-					copyButton.style.transition = "opacity 0.1s";
-					copyButton.addEventListener("click", () => {
-						navigator.clipboard.writeText(drawn).catch(err => console.error('Copy failed', err));
-					});
-					copyButton.addEventListener("mousedown", () => copyButton.style.background = "#555");
-					copyButton.addEventListener("mouseup", () => copyButton.style.background = "#333");
-					copyButton.addEventListener("mouseenter", () => copyButton.style.background = "#444");
-					copyButton.addEventListener("mouseleave", () => copyButton.style.background = "#333");
-					gridContainer.addEventListener("mouseenter", () => copyButton.style.opacity = "1");
-					gridContainer.addEventListener("mouseleave", () => copyButton.style.opacity = "0");
-					gridContainer.appendChild(copyButton);
-					wrapper.appendChild(gridContainer);
-					wrapper.appendChild(labelsDiv);
-					block.appendChild(wrapper);
-				} catch (e) {
-					const errLine = document.createElement("div");
-					errLine.className = "output-line";
-					errLine.style.color = "#ff6666";
-					errLine.textContent = "Error on line " + (index + 1) + ": " + e.message;
-					block.appendChild(errLine);
-				}
-
-				blocks.push(block);
+				renderBlock(index);
 			});
-
-			blocks.forEach(block => resultsEl.appendChild(block));
 		}
 
 		document.getElementById("input").addEventListener("input", () => {
+			expandNs = {};
 			try {
 				renderAll();
 			} catch (e) {
@@ -342,3 +469,4 @@
 	</div>
 </body>
 </html>
+
