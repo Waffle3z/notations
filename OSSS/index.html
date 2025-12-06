@@ -244,7 +244,6 @@
 			return expandDiv;
 		}
 		function renderBlock(index) {
-			const inputEl = document.getElementById("input");
 			const numbersCheckboxEl = document.getElementById("numbersCheckbox");
 			const resultsEl = document.getElementById("results");
 
@@ -255,7 +254,7 @@
 			const useColor = coloringCheckboxEl ? coloringCheckboxEl.checked : true;
 			const cellSizeEl = document.getElementById("cellSize");
 			const cellSize = parseInt(cellSizeEl.value) || 12;
-			const lines = inputEl.value.split(/\r?\n/);
+			const lines = readLines();
 			let trimmed = lines[index].trim();
 			if (!trimmed) return;
 			if (trimmed.at(-1) != ")") trimmed += ")";
@@ -402,7 +401,6 @@
 		}
 
 		function renderAll() {
-			const inputEl = document.getElementById("input");
 			const errEl = document.getElementById("error");
 			const resultsEl = document.getElementById("results");
 			errEl.textContent = "";
