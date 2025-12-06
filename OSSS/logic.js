@@ -134,10 +134,16 @@ function expand(blockList, shortRows, n) {
 	for (let c = 0; c < grid[rootIndex].length; c++) {
 		if (grid[rootIndex][c] != 0) rootRowColumns++;
 	}
-	const ancestorRows = getMatrixAncestorRows(matrix);
+	const firstColumnAncestors = [matrix.length - 1];
+	while (true) {
+		const a = firstColumnAncestors.at(-1);
+		const i = matrix.findLastIndex((v, i) => v[0] < matrix[a][0] && i < a);
+		if (i < 0) break;
+		firstColumnAncestors.push(i);
+	}
 	const noAscend = []; // only rows with more columns than the root row ascend
 	for (let r = rootIndex; r < rootIndex + badPartHeight; r++) {
-		if (ancestorRows.includes(r)) continue; // direct ancestors still should ascend
+		if (firstColumnAncestors.includes(r)) continue; // direct/indirect ancestors still should ascend
 		let columns = 0;
 		for (let c = 0; c < grid[r].length; c++) {
 			if (grid[r][c] != 0) columns++;
