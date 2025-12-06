@@ -50,8 +50,27 @@ function blockListToGrid(blockList) {
 	});
 }
 
+function getMatrixAncestorRows(matrix) {
+	const ancestorRows = [matrix.length - 1];
+	while (true) {
+		const a = ancestorRows.at(-1);
+		const row = matrix[a];
+		const i = matrix.findLastIndex((parent, i) => {
+			if (i >= a) return false;
+			for (let j = 0; j < row.length; j++) {
+				if (parent[j] >= row[j]) return false;
+			}
+			return true;
+		});
+		if (i < 0) break;
+		ancestorRows.push(i);
+	}
+	return ancestorRows;
+}
+
 function getShadedRegion(blockList, shortRows) {
 	const matrix = blockListToMatrix(blockList);
+	blockList = matrixToBlockList(matrix, false); // root finding is without short rows
 	const grid = blockListToGrid(blockList);
 	const seen = grid.map(row => row.map(_ => false));
 	const y = grid.length - 1;
@@ -59,13 +78,7 @@ function getShadedRegion(blockList, shortRows) {
 	if (x == -1) return [seen, []];
 	const v = grid[y][x];
 	const queue = [[y, x]];
-	const ancestorRows = [y];
-	while (true) {
-		const a = ancestorRows.at(-1);
-		const i = matrix.findLastIndex((v, i) => v[0] < matrix[a][0] && i < a);
-		if (i < 0) break;
-		ancestorRows.push(i);
-	}
+	const ancestorRows = getMatrixAncestorRows(matrix);
 	const getPreviousRow = (r) => {
 		let i = ancestorRows.indexOf(r);
 		if (i == ancestorRows.length - 1) return null;
@@ -77,7 +90,7 @@ function getShadedRegion(blockList, shortRows) {
 		seen[r][c] = true;
 		const r2 = getPreviousRow(r);
 		if (r2) {
-			const dc = shortRows ? 0 : r2 - r + 1;
+			const dc = r2 - r + 1;
 			for (let c2 = c - 1 + dc; c2 <= c + 1 + dc; c2++) {
 				if (grid[r2][c2] >= v) queue.push([r2, c2]);
 			}
@@ -88,8 +101,14 @@ function getShadedRegion(blockList, shortRows) {
 	}
 	const r = seen.findIndex(r => r.includes(true));
 	const c = seen[r].indexOf(true);
-	const ancestor = matrix.findLastIndex((v, i) => (!v[0] || v[0] < matrix[r][0]) && i < r);
-	const root = [ancestor, shortRows ? c - 1 : c - (r - ancestor)];
+	const ancestor = ancestorRows.find(i => i < r);
+	const root = [ancestor, c - (r - ancestor)];
+	if (shortRows) {
+		for (let r = 0; r < grid.length; r++) {
+			seen[r] = seen[r].slice(grid[r].length - 2 - matrix[r].find(x => x > 0));
+		}
+		if (matrix[root[0]].find(x => x > 0)) root[1] -= grid[root[0]].length - 2 - matrix[root[0]].find(x => x > 0);
+	}
 	return [seen, root];
 }
 
@@ -115,13 +134,7 @@ function expand(blockList, shortRows, n) {
 	for (let c = 0; c < grid[rootIndex].length; c++) {
 		if (grid[rootIndex][c] != 0) rootRowColumns++;
 	}
-	const ancestorRows = [grid.length - 1];
-	while (true) {
-		const a = ancestorRows.at(-1);
-		const i = matrix.findLastIndex((v, i) => v[0] < matrix[a][0] && i < a);
-		if (i < 0) break;
-		ancestorRows.push(i);
-	}
+	const ancestorRows = getMatrixAncestorRows(matrix);
 	const noAscend = []; // only rows with more columns than the root row ascend
 	for (let r = rootIndex; r < rootIndex + badPartHeight; r++) {
 		if (ancestorRows.includes(r)) continue; // direct ancestors still should ascend
