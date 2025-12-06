@@ -90,14 +90,12 @@ function getShadedRegion(blockList, shortRows) {
 		seen[r][c] = true;
 		const r2 = getPreviousRow(r);
 		if (r2) {
-			const dc = r2 - r + 1;
-			for (let c2 = c - 1 + dc; c2 <= c + 1 + dc; c2++) {
-				if (grid[r2][c2] >= v) queue.push([r2, c2]);
-			}
+			const c2 = c+r2 - r + 1; // corresponding column in the parent row
+			if (grid[r2][c2-1] >= v) queue.push([r2, c2-1]); // diagonal search
+			if (grid[r2][c2] >= v) queue.push([r2, c2]); // vertical search
+			if (grid[r2][c2] > 0 && grid[r2][c2+1] > 0) queue.push([r2, c2]); // vertical search >=()()(1)(2,1)(3,2)(4,3)
 		}
-		for (let c2 = c-1; c2 <= c+1; c2 += 2) {
-			if (grid[r][c2] >= v) queue.push([r, c2]);
-		}
+		if (grid[r][c-1] >= v) queue.push([r, c-1]); // horizontal search
 	}
 	const r = seen.findIndex(r => r.includes(true));
 	const c = seen[r].indexOf(true);
@@ -179,6 +177,13 @@ function expand(blockList, shortRows, n) {
 		while (nonzeros.length > rootRowColumns) {
 			const c = nonzeros.pop(); // only first rootRowColumn columns ascend
 			grid[r][c] = 0;
+		}
+	}
+	// fill row ends to the correct block length
+	for (let r = 0; r < grid.length; r++) {
+		let v = grid[r].find(x => x > 0) || 0;
+		for (let i = grid[r].length; i < v + 2; i++) {
+			grid[r].push(0);
 		}
 	}
 	grid.pop(); // remove last copy of the cut node in case it's a successor
