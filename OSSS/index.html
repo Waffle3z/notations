@@ -425,6 +425,10 @@
 					}
 				}
 			}
+			const resultsEl = document.getElementById("results");
+			while (resultsEl.children.length > lines.length) {
+				resultsEl.removeChild(resultsEl.lastChild);
+			}
 			previousLines = lines;
 		});
 
