@@ -134,6 +134,7 @@
 	<script src="logic.js"></script>
 	<script>
 		let expandNs = {};
+		let previousLines = [];
 		function createGridContainer(drawn, shaded, rootLocation, copyText, useColor, cellSize) {
 			const gridContainer = document.createElement("div");
 			gridContainer.style.backgroundColor = "#111";
@@ -395,26 +396,36 @@
 			}
 		}
 
+		function readLines() {
+			const inputEl = document.getElementById("input");
+			return inputEl.value.split(/\r?\n/).filter(x => x.length > 0);
+		}
+
 		function renderAll() {
 			const inputEl = document.getElementById("input");
 			const errEl = document.getElementById("error");
 			const resultsEl = document.getElementById("results");
 			errEl.textContent = "";
 			resultsEl.innerHTML = "";
-			const lines = inputEl.value.split(/\r?\n/);
-			lines.forEach((line, index) => {
+			readLines().forEach((line, index) => {
 				renderBlock(index);
 			});
 		}
 
 		document.getElementById("input").addEventListener("input", () => {
-			expandNs = {};
-			try {
-				renderAll();
-			} catch (e) {
-				const errEl = document.getElementById("error");
-				errEl.textContent = "Unexpected error: " + e.message;
+			const lines = readLines();
+			for (let i = 0; i < lines.length; i++) {
+				if (i >= previousLines.length || lines[i] !== previousLines[i]) {
+					expandNs[i] = [];
+					try {
+						renderBlock(i);
+					} catch (e) {
+						const errEl = document.getElementById("error");
+						errEl.textContent = "Unexpected error: " + e.message;
+					}
+				}
 			}
+			previousLines = lines;
 		});
 
 		document.getElementById("numbersCheckbox").addEventListener("change", () => {
@@ -458,6 +469,7 @@
 			document.getElementById("cellSizeValue").textContent = document.getElementById("cellSize").value;
 			try {
 				renderAll();
+				previousLines = readLines();
 			} catch (e) {
 				const errEl = document.getElementById("error");
 				errEl.textContent = "Unexpected error: " + e.message;

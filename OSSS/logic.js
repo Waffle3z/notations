@@ -93,64 +93,6 @@ function getShadedRegion(blockList, shortRows) {
 	return [seen, root];
 }
 
-function arrayCompare(a, b) { // -1 if a < b, 0 if a == b, 1 if a > b
-	for (let i = 0; i < Math.max(a.length, b.length); i++) {
-		if (a[i] != b[i]) return (a[i] || 0) < (b[i] || 0) ? -1 : 1;
-	}
-	return a.length < b.length ? -1 : a.length == b.length ? 0 : 1
-}
-
-function toPointerMatrix(a) {
-	let pointerMatrix = [];
-	for (let i = 0; i < a.length; i++) {
-		pointerMatrix[i] = [];
-		for (let j = 0; j < a[i].length; j++) {
-			pointerMatrix[i][j] = {distance: 0, delta: 0}
-		}
-		let parentIndex = a.findLastIndex((v, j) => j < i && v[0] < a[i][0]);
-		if (parentIndex != -1) {
-			pointerMatrix[i][0] = {distance: i - parentIndex, delta: a[i][0] - a[parentIndex][0]}
-		}
-	}
-	for (let i = 0; i < a.length; i++) {
-		if (pointerMatrix[i][0].delta == 0) continue;
-		for (let j = 1; j < a[i].length; j++) {
-			let parentIndex = i;
-			while (true) {
-				if ((a[parentIndex][j] || 0) < a[i][j]) {
-					break;
-				} else {
-					parentIndex -= pointerMatrix[parentIndex][j-1].distance;
-				}
-			}
-			pointerMatrix[i][j].distance = i - parentIndex;
-			pointerMatrix[i][j].delta = a[i][j] - (a[parentIndex][j] || 0);
-		}
-	}
-	return pointerMatrix;
-}
-
-function toMatrix(pm) {
-	let matrix = [];
-	for (let i = 0; i < pm.length; i++) {
-		matrix[i] = [];
-		for (let j = 0; j < pm[i].length; j++) {
-			matrix[i][j] = pm.delta == 0 ? 0 : (matrix[i-pm[i][j].distance][j] || 0) + pm[i][j].delta;
-		}
-	}
-	return matrix;
-}
-
-function deepcopy(pm) {
-	return pm.map(v => {
-		let a = v.map(x => {
-			return {distance: x.distance, delta: x.delta};
-		});
-		if (v.ascending) a.ascending = v.ascending;
-		return a;
-	});
-}
-
 function isSuccessor(matrix) { // zero or successor
 	return matrix.length == 0 || matrix.at(-1).length == 0;
 }
