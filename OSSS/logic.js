@@ -117,7 +117,7 @@ function isSuccessor(matrix) { // zero or successor
 function expand(blockList, shortRows, n) {
 	if (blockList.length == 0) return blockList;
 	const matrix = blockListToMatrix(blockList);
-	blockList = matrixToBlockList(matrix, true);
+	blockList = matrixToBlockList(matrix, true); // expand using short rows
 	const [rootIndex, rootColumn] = getShadedRegion(blockList, true)[1];
 	if (matrix.at(-1).length == 0) {
 		blockList.pop();
@@ -155,38 +155,45 @@ function expand(blockList, shortRows, n) {
 	const unascendRows = []; // rows to remove extra columns that shouldn't have ascended
 	for (let i = 1; i < n; i++) {
 		const y = grid.length - 1;
-		const x = cutNodeIndex + badPartWidth * (i - 1);
-		for (let r = rootIndex; r < rootIndex + badPartHeight; r++) {
-			let r2 = y + (r - rootIndex);
+		const x = cutNodeIndex + badPartWidth * (i - 1); // column where the next copy starts
+		for (let dy = 0; dy < badPartHeight; dy++) {
+			const r = rootIndex + dy; // row to copy from
+			const r2 = y + dy; // row to copy to
 			if (r2 == grid.length) {
 				grid.push([]);
-				for (let c = 0; c < rootColumn + x; c++) {
+				for (let c = 0; c < x; c++) { // fill in the left side of the copy based on the previous row
 					grid[r2][c] = grid[r2-1][c] != 0 ? grid[r2-1][c] + 1 : 0;
 				}
-				if (noAscend.includes(r)) unascendRows.push(r2);
+				if (noAscend.includes(r)) unascendRows.push([r2, r]);
 			}
-			for (let c = rootColumn; c < grid[r].length; c++) {
-				grid[r2][x + c - rootColumn] = grid[r][c];
+			for (let c = rootColumn; c < grid[r].length; c++) { // columns to copy from
+				const dx = c - rootColumn;
+				const c2 = x + dx; // column to copy to
+				grid[r2][c2] = grid[r][c]; // fill in the copy
 			}
 			for (let c = 0; c < rightPadding * i; c++) { // fill row ends to the correct block length
 				if (x + grid[r].length + c >= grid[r2].length) grid[r2].push(0);
 			}
 		}
 	}
-	for (let r of unascendRows) {
-		let nonzeros = [];
+	for (let [r, originalRow] of unascendRows) {
+		const nonzeros = [];
+		let originalNonzeros = 0;
+		for (let c = 0; c < grid[originalRow].length; c++) {
+			if (grid[originalRow][c] != 0) originalNonzeros++;
+		}
 		for (let c = 0; c < grid[r].length; c++) {
 			if (grid[r][c] != 0) nonzeros.push(c);
 		}
-		while (nonzeros.length > rootRowColumns) {
+		while (nonzeros.length > originalNonzeros) {
 			const c = nonzeros.pop(); // only first rootRowColumn columns ascend
 			grid[r][c] = 0;
 		}
 	}
 	grid.pop(); // remove last copy of the cut node in case it's a successor
-	let newBlockList = [];
+	const newBlockList = [];
 	for (let i = 0; i < grid.length; i++) {
-		let row = [];
+		const row = [];
 		for (let j = 0; j < grid[i].length; j++) {
 			if (grid[i][j] == 0) row.push(j);
 		}
