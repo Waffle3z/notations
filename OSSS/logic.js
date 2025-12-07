@@ -151,6 +151,7 @@ function expand(blockList, shortRows, n) {
 	for (let c = rootColumn; c < grid[rootIndex].length; c++) { // copy root ending to cut row
 		grid.at(-1)[cutNodeIndex + c - rootColumn] = grid[rootIndex][c];
 	}
+	const rightPadding = (grid.at(-1).length - cutNodeIndex) - (grid[rootIndex].length - rootColumn);
 	const unascendRows = []; // rows to remove extra columns that shouldn't have ascended
 	for (let i = 1; i < n; i++) {
 		const y = grid.length - 1;
@@ -167,6 +168,9 @@ function expand(blockList, shortRows, n) {
 			for (let c = rootColumn; c < grid[r].length; c++) {
 				grid[r2][x + c - rootColumn] = grid[r][c];
 			}
+			for (let c = 0; c < rightPadding * i; c++) { // fill row ends to the correct block length
+				if (x + grid[r].length + c >= grid[r2].length) grid[r2].push(0);
+			}
 		}
 	}
 	for (let r of unascendRows) {
@@ -177,13 +181,6 @@ function expand(blockList, shortRows, n) {
 		while (nonzeros.length > rootRowColumns) {
 			const c = nonzeros.pop(); // only first rootRowColumn columns ascend
 			grid[r][c] = 0;
-		}
-	}
-	// fill row ends to the correct block length
-	for (let r = 0; r < grid.length; r++) {
-		let v = grid[r].find(x => x > 0) || 0;
-		for (let i = grid[r].length; i < v + 2; i++) {
-			grid[r].push(0);
 		}
 	}
 	grid.pop(); // remove last copy of the cut node in case it's a successor
