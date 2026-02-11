@@ -344,7 +344,10 @@ function initialize() {
 				if (input.name) inp.name = input.name;
 				if (input.type === "checkbox") {
 					inp.checked = notation[input.id];
-					inp.addEventListener('change', () => notation[input.id] = inp.checked);
+					inp.addEventListener('change', () => {
+						notation[input.id] = inp.checked;
+						refreshTerms();
+					});
 				}
 				div.appendChild(inp);
 				let label = document.createElement("label");

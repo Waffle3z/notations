@@ -114,7 +114,7 @@ class notation {
 			for (let j = 0; j < copy.length; j++) {
 				if (copy[j].ascending) {
 					for (let k = 0; k < i; k++) {
-						copy[j].push({distance: copy[j].at(-1).distance, delta: 1}, copy[j].pop());
+						copy[j].unshift({distance: copy[j][0].distance, delta: 1});
 					}
 				}
 				for (let v of copy[j]) {

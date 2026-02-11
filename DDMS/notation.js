@@ -6,7 +6,7 @@ function arrayCompare(a, b) { // -1 if a < b, 0 if a == b, 1 if a > b
 }
 
 function toPointerMatrix(a) {
-	let pointerMatrix = [];
+	const pointerMatrix = [];
 	for (let i = 0; i < a.length; i++) {
 		pointerMatrix[i] = [];
 		for (let j = 0; j < a[i].length; j++) {
@@ -36,11 +36,11 @@ function toPointerMatrix(a) {
 }
 
 function toMatrix(pm) {
-	let matrix = [];
+	const matrix = [];
 	for (let i = 0; i < pm.length; i++) {
 		matrix[i] = [];
 		for (let j = 0; j < pm[i].length; j++) {
-			matrix[i][j] = pm.delta == 0 ? 0 : (matrix[i-pm[i][j].distance][j] || 0) + pm[i][j].delta;
+			matrix[i][j] = pm[i][j].delta == 0 ? 0 : (matrix[i-pm[i][j].distance][j] || 0) + pm[i][j].delta;
 		}
 	}
 	return matrix;
@@ -126,13 +126,13 @@ class notation {
 				if (term.ascending) {
 					let parent = out[rootIndex + 1 + j - term.at(-1).distance];
 					let lengthDelta = term.length - parent.length + (parent[0].distance == 0 ? 1 : 0);
-					let distance = term.at(-1).distance;
+					let distance = term[0].distance;
 					let back = [];
 					for (let k = 0; k < lengthDelta; k++) {
 						back.unshift(term.pop());
 					}
 					for (let k = 0; k < i * term.ascending; k++) {
-						term.push({distance: distance, delta: 1});
+						term.unshift({distance: distance, delta: 1});
 					}
 					term.push(...back);
 				}

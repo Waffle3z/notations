@@ -229,7 +229,6 @@ function expand(blockList, shortRows, n) {
 			grid.at(-1)[cutNodeIndex + c - rootColumn] = grid[rootIndex][c];
 		}
 		const rightPadding = (grid.at(-1).length - cutNodeIndex) - (grid[rootIndex].length - rootColumn);
-		console.log("rightPadding", rightPadding);
 		const unascendRows = []; // rows to remove extra columns that shouldn't have ascended
 		for (let i = 1; i < n; i++) {
 			const y = grid.length - 1;
