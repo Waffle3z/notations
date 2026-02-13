@@ -150,6 +150,16 @@ class notation {
 	}
 
 	static parameters = [
-		{type: "checkbox", label: "Weakly ascending", id: "weaklyAscending"}
+		{type: "checkbox", label: "Weakly ascending", id: "weaklyAscending", url: true},
+		{type: "checkbox", label: "Compressed", id: "compress"}
 	]
+
+	static convertToNotation(value) {
+		let matrix = notation.fromString(value);
+		let str = notation.toString(matrix);
+		if (notation.compress) {
+			str = str.replaceAll(")(", " ").replace("(", "").replace(")", "").replaceAll(",", "");
+		}
+		return str;
+	}
 };

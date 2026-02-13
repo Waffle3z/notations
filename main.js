@@ -323,7 +323,25 @@ function initialize() {
 		});
 	}
 	if (notation.parameters) {
+		// Read URL parameters for parameters with url: true
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
 		for (let param of notation.parameters) {
+			if (!param.url) continue;
+			const urlValue = urlParams.get(param.id);
+			if (urlValue != null) {
+				// Set value based on type
+				if (param.type === "checkbox") {
+					notation[param.id] = urlValue === "true" || urlValue === "1";
+				} else {
+					notation[param.id] = urlValue;
+				}
+			}
+		}
+
+		for (let param of notation.parameters) {
+			if (param.url) continue; // skip URL parameters
+
 			let container;
 			if (param.legend) {
 				container = document.createElement("fieldset");
@@ -337,6 +355,8 @@ function initialize() {
 
 			let inputs = param.inputs || [param];
 			for (let input of inputs) {
+				if (input.url) continue; // skip URL parameters
+
 				let div = document.createElement("div");
 				let inp = document.createElement("input");
 				inp.type = input.type;
