@@ -1,7 +1,11 @@
 class notation {
 	static title = "Y-sequence";
-	static hasAliases = true;
-
+	static aliases = true;
+	
+	static parameters = [
+		{type: "checkbox", id: "aliases", label: "Show ordinal names"},
+	]
+	
 	static lessOrEqual(a, b) {
 		for (let i = 0; i < a.length; i++) {
 			if (i >= b.length) return false;
@@ -20,7 +24,7 @@ class notation {
 
 	static convertToNotation(value) {
 		let str = value;
-		if (settings.aliases) {
+		if (notation.aliases) {
 			let alias = findAlias(value);
 			if (alias) {
 				str += " = " + alias;

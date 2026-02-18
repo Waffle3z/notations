@@ -25,6 +25,7 @@ function matrixSimplify(matrix) {
 }
 
 function matrixLessThan(a, b) {
+	if (a.length == 0 || b.length == 0) return a.length < b.length;
 	if (a[0].length != b[0].length) return a[0].length < b[0].length;
 	for (let i = 0; i < a.length; i++) {
 		if (i >= b.length) return false;
@@ -32,12 +33,28 @@ function matrixLessThan(a, b) {
 			if (a[i][j] != b[i][j]) return a[i][j] < b[i][j];
 		}
 	}
-	return b.length > a.length;
+	return a.length < b.length;
 }
 
 class notation {
 	static title = "BMS Explorer";
-	static hasAliases = true;
+	static notation = "BMS";
+	static simplify = false;
+	static compress = false;
+	static aliases = true;
+	
+	static parameters = [
+		{legend: "Notation:", inputs: [
+			{type: "radio", id: "notation", value: "BMS", label: "BMS"},
+			{type: "radio", id: "notation", value: "PMS", label: "PMS"},
+			{type: "radio", id: "notation", value: "AMS", label: "AMS"},
+			{type: "radio", id: "notation", value: "0Y", label: "0-Y"},
+			{type: "radio", id: "notation", value: "VZ", label: "Vulcaniz"},
+		]},
+		{type: "checkbox", id: "simplify", label: "Simplify trailing zeros"},
+		{type: "checkbox", id: "aliases", label: "Show ordinal names"},
+		{type: "checkbox", id: "compress", label: "Compressed", visibleIf: () => ["BMS", "AMS", "PMS"].includes(notation.notation)},
+	]
 	
 	static toString(m) {
 		let s = "";
@@ -58,13 +75,12 @@ class notation {
 	}
 
 	static isSuccessor(matrix) {
-		const lastColumn = matrix[matrix.length - 1];
-		if (lastColumn) {
-			return !lastColumn.find(x => x != 0);
-		}
+		const lastColumn = matrix.at(-1);
+		return lastColumn ? !lastColumn.find(x => x != 0) : true;
 	}
 
 	static lessOrEqual(a, b) {
+		if (a.length == 0 || b.length == 0) return a.length <= b.length;
 		if (a[0].length != b[0].length) return a[0].length < b[0].length;
 		for (let i = 0; i < a.length; i++) {
 			if (i >= b.length) return false;
@@ -72,7 +88,7 @@ class notation {
 				if (a[i][j] != b[i][j]) return a[i][j] < b[i][j];
 			}
 		}
-		return b.length >= a.length;
+		return a.length <= b.length;
 	}
 
 	static expandLimit(n) {
@@ -85,44 +101,40 @@ class notation {
 		if (!lastColumn) return [];
 		const Li = lastColumn.findLastIndex(L => L != 0);
 		const newMatrix = matrix.map(row => [...row]);
-		if (Li == -1 || n == 0) {
+		if (Li == -1 || n == 1) {
 			newMatrix.pop();
 			return matrixReduce(newMatrix);
 		}
 		const L = lastColumn[Li];
+		if (n == 0) return matrixReduce(newMatrix.slice(0, -L-1));
 		for (let i = Li; i < lastColumn.length; i++) {
-			if (newMatrix.at(-L-1)[i] !== 0) {
-				newMatrix.at(-1)[i] = newMatrix.at(-L-1)[i] + L;
-			} else {
-				newMatrix.at(-1)[i] = 0;
-			}
+			const parent = newMatrix.at(-L-1)[i];
+			newMatrix.at(-1)[i] = parent == 0 ? 0 : parent + L;
 		}
 		const badPart = newMatrix.slice(-L);
 		for (let i = 1; i < n; i++) {
 			for (let j = 0; j < badPart.length; j++) {
-				const column = badPart[j].map(v => v > j+1 ? v + L*i : v)
-				newMatrix.push(column);
+				newMatrix.push(badPart[j].map(v => v > j+1 ? v + L*i : v));
 			}
 		}
-		if (notation.isSuccessor(newMatrix)) {
-			newMatrix.pop(); // fixes limits of limits expanding into successors
-		}
+		newMatrix.pop(); // drop the last copy of the cut node
 		return matrixReduce(newMatrix);
 	}
 
 	static convertToNotation(value) {
 		let matrix = notation.fromString(value);
-		if (settings.notation == "AMS") {
+		if (matrix.length == 0) return "∅";
+		if (notation.notation == "AMS") {
 			matrix = PMStoAMS(matrix);
-		} else if (settings.notation == "BMS") {
+		} else if (notation.notation == "BMS") {
 			matrix = PMStoBMS(matrix);
 		}
 		
 		let str;
-		if (settings.notation == "0Y") {
+		if (notation.notation == "0Y") {
 			matrix = PMSto0Y(matrix);
 			str = matrix.join(",");
-		} else if (settings.notation == "VZ") {
+		} else if (notation.notation == "VZ") {
 			matrix = matrixSimplify(PMStoBMS(matrix));
 			let sequence = [];
 
@@ -136,13 +148,13 @@ class notation {
 
 			str = sequence.join(",");
 		} else {
-			str = notation.toString(settings.simplify ? matrixSimplify(matrix) : matrix);
-			if (settings.compress) {
+			str = notation.toString(notation.simplify ? matrixSimplify(matrix) : matrix);
+			if (notation.compress) {
 				str = str.replaceAll(")(", " ").replace("(", "").replace(")", "").replaceAll(",", "");
 			}
 		}
 		
-		if (settings.aliases) {
+		if (notation.aliases) {
 			let alias = findAlias(value);
 			if (alias) {
 				str += " = " + alias;

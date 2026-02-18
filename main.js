@@ -275,109 +275,118 @@ function initialize() {
 		container.appendChild(settingsContainer);
 	}
 
-	let indentationContainer = settingsContainer.querySelector("#indentationContainer");
-	if (!indentationContainer) {
-
-		indentationContainer = document.createElement("fieldset");
-		indentationContainer.setAttribute("id", "indentationContainer");
-		settingsContainer.appendChild(indentationContainer);
-		indentationContainer.innerHTML = `
-		<legend>Indentation:</legend>
-		<div>
-			<input type="radio" id="expansion" value="expansion" name="indentation" checked />
-			<label for="expansion">Align recursive expansion</label>
-		</div>
-		<div>
-			<input type="radio" id="FS" value="FS" name="indentation" />
-			<label for="FS">Align fundamental sequence</label>
-		</div>
-		<div>
-			<input type="radio" id="noindent" value="noindent" name="indentation" />
-			<label for="noindent">None</label>
-		</div>`;
+	if (!notation.parameters) {
+		notation.parameters = [];
 	}
-	indentationContainer.querySelectorAll('input[name="indentation"]').forEach(function(radioInput) {
-		radioInput.addEventListener('change', function() {
-			setIndentation(radioInput.value);
-		});
+
+	// Add default indentation parameter
+	notation.parameters.unshift({
+		legend: "Indentation:",
+		inputs: [
+			{type: "radio", id: "indentation", value: "expansion", label: "Align recursive expansion"},
+			{type: "radio", id: "indentation", value: "FS", label: "Align fundamental sequence"},
+			{type: "radio", id: "indentation", value: "noindent", label: "None"}
+		]
 	});
+	notation.indentation = "expansion";
 
-	if (notation.hasAliases) {
-		settings.aliases = true;
-
-		let aliasesContainer = settingsContainer.querySelector("#aliasesContainer");
-		if (!aliasesContainer) {
-			aliasesContainer = document.createElement("div");
-			aliasesContainer.setAttribute("id", "aliasesContainer");
-			settingsContainer.appendChild(aliasesContainer);
-			aliasesContainer.innerHTML = `
-			<input type="checkbox" id="aliases" checked />
-			<label for="aliases">Show ordinal names</label>`;
+	// Read URL parameters for parameters with url: true
+	const queryString = window.location.search;
+	const urlParams = new URLSearchParams(queryString);
+	for (let param of notation.parameters) {
+		if (!param.url) continue;
+		const urlValue = urlParams.get(param.id);
+		if (urlValue != null) {
+			// Set value based on type
+			if (param.type === "checkbox") {
+				notation[param.id] = urlValue === "true" || urlValue === "1";
+			} else if (param.type === "radio") {
+				notation[param.id] = urlValue;
+			} else {
+				notation[param.id] = urlValue;
+			}
 		}
+	}
 
-		const aliasesCheckbox = aliasesContainer.querySelector("#aliases");
-		settings.aliases = aliasesCheckbox.checked;
-		aliasesCheckbox.addEventListener('change', function() {
-			settings.aliases = aliasesCheckbox.checked;
-			refreshTerms();
+	// Function to render a single parameter
+	function renderParam(param, container) {
+		let cont;
+		if (param.legend) {
+			cont = document.createElement("fieldset");
+			let legend = document.createElement("legend");
+			legend.textContent = param.legend;
+			cont.appendChild(legend);
+		} else {
+			cont = document.createElement("div");
+		}
+		container.appendChild(cont);
+
+		let inputs = param.inputs || [param];
+		for (let input of inputs) {
+			if (input.url) continue; // skip URL parameters
+
+			let div = document.createElement("div");
+			if (input.visibleIf) {
+				div.className = "param-visibility";
+				div._visibleIf = input.visibleIf;
+			}
+			let inp = document.createElement("input");
+			inp.type = input.type;
+			inp.id = input.id;
+			if (input.name) {
+				inp.name = input.name;
+			} else if (input.type === "radio") {
+				inp.name = input.id;
+			}
+			if (input.type === "checkbox") {
+				inp.checked = notation[input.id];
+				inp.addEventListener('change', () => {
+					notation[input.id] = inp.checked;
+					refreshTerms();
+					checkVisibility();
+				});
+			} else if (input.type === "radio") {
+				inp.value = input.value;
+				if (notation[input.id] === input.value) {
+					inp.checked = true;
+				}
+				inp.addEventListener('change', () => {
+					if (inp.checked) {
+						notation[input.id] = inp.value;
+						// Call setIndentation for indentation radio buttons
+						if (input.id === "indentation") {
+							setIndentation(inp.value);
+						} else {
+							refreshTerms();
+						}
+						checkVisibility();
+					}
+				});
+			}
+			div.appendChild(inp);
+			let label = document.createElement("label");
+			label.setAttribute("for", input.id);
+			label.textContent = ' ' + input.label;
+			div.appendChild(label);
+			cont.appendChild(div);
+		}
+	}
+
+	// Render parameters
+	for (let param of notation.parameters) {
+		if (param.url) continue;
+		renderParam(param, settingsContainer);
+	}
+
+	function checkVisibility() {
+		// Check visibility for parameters with visibleIf conditions
+		document.querySelectorAll('.param-visibility').forEach(div => {
+			if (div._visibleIf) {
+				div.style.display = div._visibleIf() ? "block" : "none";
+			}
 		});
 	}
-	if (notation.parameters) {
-		// Read URL parameters for parameters with url: true
-		const queryString = window.location.search;
-		const urlParams = new URLSearchParams(queryString);
-		for (let param of notation.parameters) {
-			if (!param.url) continue;
-			const urlValue = urlParams.get(param.id);
-			if (urlValue != null) {
-				// Set value based on type
-				if (param.type === "checkbox") {
-					notation[param.id] = urlValue === "true" || urlValue === "1";
-				} else {
-					notation[param.id] = urlValue;
-				}
-			}
-		}
-
-		for (let param of notation.parameters) {
-			if (param.url) continue; // skip URL parameters
-
-			let container;
-			if (param.legend) {
-				container = document.createElement("fieldset");
-				let legend = document.createElement("legend");
-				legend.textContent = param.legend;
-				container.appendChild(legend);
-			} else {
-				container = document.createElement("div");
-			}
-			settingsContainer.appendChild(container);
-
-			let inputs = param.inputs || [param];
-			for (let input of inputs) {
-				if (input.url) continue; // skip URL parameters
-
-				let div = document.createElement("div");
-				let inp = document.createElement("input");
-				inp.type = input.type;
-				inp.id = input.id;
-				if (input.name) inp.name = input.name;
-				if (input.type === "checkbox") {
-					inp.checked = notation[input.id];
-					inp.addEventListener('change', () => {
-						notation[input.id] = inp.checked;
-						refreshTerms();
-					});
-				}
-				div.appendChild(inp);
-				let label = document.createElement("label");
-				label.setAttribute("for", input.id);
-				label.textContent = ' ' + input.label;
-				div.appendChild(label);
-				container.appendChild(div);
-			}
-		}
-	}
+	checkVisibility();
 
 	let footer = document.getElementById("footer");
 	if (!footer) {
