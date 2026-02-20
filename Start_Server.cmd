@@ -9,8 +9,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-rem If PORT isn't set, default to 5500
-if "%PORT%"=="" set "PORT=5500"
+rem If PORT isn't set, default to 5510 (to avoid conflict with VS Code Live Server)
+if "%PORT%"=="" set "PORT=5510"
 
 rem Start the server in its own window and keep it open
 start "Notations Dev Server" cmd /k node dev-server.mjs

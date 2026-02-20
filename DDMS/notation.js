@@ -75,24 +75,23 @@ class notation {
 	}
 
 	static expand(matrix, n) {
-		let pm = toPointerMatrix(matrix);
-		let rootIndex = pm.length - 1 - pm.at(-1).at(-1).distance;
+		const pm = toPointerMatrix(matrix);
+		const rootIndex = pm.length - 1 - pm.at(-1).at(-1).distance;
 		if (n == 0) return toMatrix(pm.slice(0, rootIndex - 1));
-		let out = deepcopy(pm);
-		let tail = out.slice(rootIndex + 1);
+		const out = deepcopy(pm);
+		const tail = out.slice(rootIndex + 1);
 		
-		let cutNode = tail.at(-1);
-		let rootNode = out[rootIndex];
-		let lastColumnIndex = cutNode.length - 1;
-		let lastColumn = cutNode[lastColumnIndex];
-		let lastColumnDistance = lastColumn.distance;
-		let getTermLength = (x) => x.length - (x.at(-1).delta == 0 ? 1 : 0); // (0) has length 0
-		let ascend = lastColumnIndex >= getTermLength(rootNode) ? lastColumn.delta - 1 : 0;
+		const cutNode = tail.at(-1);
+		const rootNode = out[rootIndex];
+		const lastColumnIndex = cutNode.length - 1;
+		const lastColumn = cutNode[lastColumnIndex];
+		const lastColumnDistance = lastColumn.distance;
+		const getTermLength = (x) => x.length - (x.at(-1).delta == 0 ? 1 : 0); // (0) has length 0
+		const ascend = lastColumnIndex >= getTermLength(rootNode) ? lastColumn.delta - 1 : 0;
 		if (ascend == 0 && cutNode.length - getTermLength(rootNode) <= 1) {
 			cutNode.pop();
-			let root = rootNode;
-			for (let i = lastColumnIndex; i < root.length; i++) {
-				cutNode[i] = {distance: root[i].distance + lastColumnDistance, delta: root[i].delta};
+			for (let i = lastColumnIndex; i < rootNode.length; i++) {
+				cutNode[i] = {distance: rootNode[i].distance + lastColumnDistance, delta: rootNode[i].delta};
 			}
 		} else {
 			if (lastColumn.delta > 1) {
@@ -104,30 +103,28 @@ class notation {
 			}
 			lastColumn.delta--;
 			// find how many extra columns the term ends in
-			let ascend = getTermLength(cutNode) - getTermLength(rootNode); // number of extra columns to ascend
+			const ascend = getTermLength(cutNode) - getTermLength(rootNode); // number of extra columns to ascend
 			rootNode.ascending = ascend;
 			cutNode.ascending = ascend;
 			// descendants of an ascended term that have an extra column also ascend
 			for (let i = rootIndex; i < out.length; i++) {
-				let parentIndex = i - out[i].at(-1).distance;
-				let canAscend = getTermLength(out[i]) > getTermLength(notation.weaklyAscending ? out[parentIndex] : rootNode);
+				const parentIndex = i - out[i].at(-1).distance;
+				const canAscend = getTermLength(out[i]) > getTermLength(notation.weaklyAscending ? out[parentIndex] : rootNode);
 				if (canAscend && out[parentIndex].ascending) out[i].ascending = ascend;
 			}
 		}
-		let parentColumn = pm[rootIndex][lastColumnIndex];
+		const parentColumn = pm[rootIndex][lastColumnIndex];
 		if (parentColumn && lastColumn.delta == parentColumn.delta) lastColumn.distance = parentColumn.distance;
 		if (cutNode.length > 1 && lastColumn.delta == 0) cutNode.pop();
-		tail = deepcopy(tail);
-		cutNode = tail.at(-1);
 		for (let i = 1; i < n; i++) {
-			let copy = deepcopy(tail);
+			const copy = deepcopy(tail);
 			for (let j = 0; j < copy.length; j++) {
-				let term = copy[j];
+				const term = copy[j];
 				if (term.ascending) {
-					let parent = out[rootIndex + 1 + j - term.at(-1).distance];
-					let lengthDelta = term.length - parent.length + (parent[0].distance == 0 ? 1 : 0);
-					let distance = term[0].distance;
-					let back = [];
+					const parent = out[rootIndex + 1 + j - term.at(-1).distance];
+					const lengthDelta = term.length - parent.length + (parent[0].distance == 0 ? 1 : 0);
+					const distance = term[0].distance;
+					const back = [];
 					for (let k = 0; k < lengthDelta; k++) {
 						back.unshift(term.pop());
 					}
