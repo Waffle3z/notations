@@ -71,34 +71,31 @@ class notation {
 		
 		const cutNode = tail.at(-1);
 		const rootNode = out[rootIndex];
-		const lastColumnIndex = cutNode.length - 1;
-		const lastColumn = cutNode.at(-1);
+		const lastColumn = cutNode.pop();
 		const getTermLength = (x) => x.length - (x.at(-1) == 0 ? 1 : 0); // (0) has length 0
-		const ascendingMap = new Map();
-		if (cutNode.length - getTermLength(rootNode) <= 1) {
-			cutNode.pop();
+		const ascendingSet = new Set();
+		const extra = getTermLength(cutNode) - getTermLength(rootNode); // number of extra columns to ascend
+		if (extra < 1) {
 			for (let i = cutNode.length; i < rootNode.length; i++) {
 				cutNode[i] = rootNode[i] == 0 ? 0 : rootNode[i] + lastColumn;
 			}
 		} else {
-			if (cutNode.length > 1) cutNode.pop();
-			const extra = getTermLength(cutNode) - getTermLength(rootNode); // number of extra columns to ascend
-			ascendingMap.set(rootIndex, extra);
-			ascendingMap.set(tail.length-1, extra);
+			ascendingSet.add(rootIndex);
+			ascendingSet.add(out.length-1);
 			// descendants of an ascended term that have an extra column also ascend
 			for (let i = rootIndex; i < out.length; i++) {
 				const parentIndex = i - out[i].at(-1);
 				const canAscend = getTermLength(out[i]) > getTermLength(rootNode);
-				if (canAscend && ascendingMap.has(parentIndex)) ascendingMap.set(i, extra);
+				if (canAscend && ascendingSet.has(parentIndex)) ascendingSet.add(i);
 			}
 		}
 		for (let i = 1; i < n; i++) {
 			for (let j = 0; j < tail.length; j++) {
 				const term = [...tail[j]];
-				if (ascendingMap.has(j + rootIndex)) {
+				if (ascendingSet.has(j + rootIndex)) {
 					const parent = out[rootIndex + 1 + j - term.at(-1)];
 					const lengthDelta = getTermLength(term) - getTermLength(parent);
-					const ascendCount = i * ascendingMap.get(j + rootIndex);
+					const ascendCount = i * extra;
 					term.splice(-lengthDelta, 0, ...Array(ascendCount).fill(term[0]));
 				}
 				for (let k = 0; k < term.length; k++) {
