@@ -9,25 +9,25 @@ function calcMountain(row) {
 				hasNextRow = true;
 				continue;
 			}
-			let p = row[i].position + 1;
-			if (mountain.length > 1) {
-				p = mountain.at(-2).findIndex(x => x.position >= row[i].position);
-			}
-			while (p >= 0) {
-				let j = 0;
-				if (mountain.length == 1) {
-					p--;
-					j = p - 1;
-				} else {
-					p = mountain.at(-2)[p].parentIndex;
-					if (p < 0) break;
-					j = row.findIndex(x => x.position >= mountain.at(-2)[p].position);
-				}
-				if (j < 0 || (j < row.length-1 && row[j].position + 1 != row[j+1].position)) break;
-				if (row[j].value < row[i].value) {
-					row[i].parentIndex = j;
+			if (mountain.length == 1) {
+				const parentIndex = row.findLastIndex((x, j) => x.value < row[i].value && j < i);
+				if (parentIndex != -1) {
+					row[i].parentIndex = parentIndex;
 					hasNextRow = true;
-					break;
+				}
+			} else {
+				const parentRow = mountain.at(-2);
+				let p = parentRow.findIndex(x => x.position >= row[i].position);
+				while (p >= 0) {
+					p = parentRow[p].parentIndex;
+					if (p < 0) break;
+					const j = row.findIndex(x => x.position >= parentRow[p].position);
+					if (j < 0 || (j+1 < row.length && row[j].position + 1 != row[j+1].position)) break;
+					if (row[j].value < row[i].value) {
+						row[i].parentIndex = j;
+						hasNextRow = true;
+						break;
+					}
 				}
 			}
 		}
@@ -53,10 +53,10 @@ function calcDiagonal(mountain) {
 	const diagonalTree = [];
 	for (let i = 0; i < mountain[0].length; i++) { // only one diagonal exists for each left-side-up diagonal line
 		for (let j = mountain.length-1; j >= 0; j--) { // prioritize the top
-			const k = mountain[j].findIndex(x => x.position >= i);
-			if (k == -1 || mountain[j][k].position != i) continue;
+			const k = mountain[j].find(x => x.position == i);
+			if (!k) continue;
 			let height = j;
-			let last = mountain[j][k];
+			let last = k;
 			while (true) {
 				const row = mountain[height];
 				const parentRow = mountain[height-1];
@@ -64,8 +64,8 @@ function calcDiagonal(mountain) {
 					last = row[last.parentIndex];
 				} else {
 					const l = parentRow[parentRow.find(x => x.position == last.position).parentIndex]; // find right-down, go to its parent=left-down
-					const m = row.find(x => x.position >= l.position); // find up-left of that=left
-					if (m.position == l.position) { // left exists
+					const m = row.find(x => x.position == l.position); // find up-left of that=left
+					if (m) { // left exists
 						last = m;
 					} else {
 						height--;
@@ -73,7 +73,7 @@ function calcDiagonal(mountain) {
 					}
 				}
 				if (!last || last.parentIndex == -1) {
-					diagonal.push(mountain[j][k].value);
+					diagonal.push(k.value);
 					diagonalTree.push(last ? last.position : height - 1);
 					break;
 				}
@@ -101,16 +101,12 @@ function cloneMountain(mountain) {
 function getBadRoot(mountain) {
 	const diagonal = calcMountain(calcDiagonal(mountain));
 	if (diagonal[0].at(-1).value != 1) return getBadRoot(diagonal);
-	const i = mountain.findLastIndex((v, i) => v.at(-1).position == mountain[0].length-1);
+	const i = mountain.findLastIndex(v => v.at(-1).position == mountain[0].length-1);
 	return mountain[i-1][mountain[i-1].at(-1).parentIndex].position;
 }
 
 function mountainFromArray(a) {
-	return calcMountain(a.map((v, i) => ({
-		value: Number(v),
-		position: i,
-		parentIndex: -1
-	})));
+	return calcMountain(a.map((v, i) => ({value: Number(v), position: i, parentIndex: -1})));
 }
 
 function mountainToArray(mountain) {
@@ -150,7 +146,7 @@ function expand(mountain, n) {
 	const tailHeight = cutHeight - badRootHeight;
 	const tailLength = cutLength - badRootSeam;
 
-	// Create Mt.Fuji shell
+	// Create Mt.Fuji
 	for (let i = 1; i <= n; i++) { // iteration
 		for (let j = badRootSeam; j < cutLength; j++) { // seam
 			let p = mountain[badRootHeight].find(x => x.position == j);
