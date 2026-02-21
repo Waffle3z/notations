@@ -37,7 +37,7 @@ function mountain_parent(A, i, j) {
 	if (targetcolumn < 0 || targetcolumn >= A.length) return [-1, -1];
 	
 	const verticals = A.map(column_verticals);
-	const targetRow = verticals[targetcolumn].findIndex(x => vertical_compare(x, verticals[i][j]) < 0) + 1;
+	const targetRow = verticals[targetcolumn].findLastIndex(x => vertical_compare(x, verticals[i][j]) < 0) + 1;
 	return [targetcolumn, targetRow];
 }
 
@@ -81,7 +81,7 @@ function vertical_increase(v, m) {
 
 function parent(A, verticalss, i, j) {
 	const targetcolumn = A[i][j][0] - 1;
-	const targeti = verticalss[targetcolumn].findIndex(x => vertical_compare(x, verticalss[i][j]) < 0) + 1;
+	const targeti = verticalss[targetcolumn].findLastIndex(x => vertical_compare(x, verticalss[i][j]) < 0) + 1;
 	return [targetcolumn, targeti];
 }
 
