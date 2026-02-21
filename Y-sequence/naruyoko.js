@@ -121,107 +121,95 @@ function expand(mountain, n) {
 	const result = cloneMountain(mountain);
 	if (mountain[0].at(-1).parentIndex == -1) {
 		result[0].pop();
+		return result;
+	}
+
+	let cutHeight = mountain.findLastIndex((v, i) => v.at(-1).position == mountain[0].length - 1);
+	for (let i = 0; i <= cutHeight; i++) result[i].pop(); // cut child
+	if (!result.at(-1).length) result.pop();
+	const cutLength = result[0].length;
+
+	const badRootSeam = getBadRoot(mountain);
+	let badRootHeight = cutHeight - 1;
+	const diagonal = calcDiagonal(mountain);
+	let newDiagonal;
+
+	const yamakazi = diagonal.at(-1).value == 1; // Yamakazi-Funka dualilty
+	if (yamakazi) { // copy bad part n times
+		newDiagonal = diagonal.slice(0, -1);
+		const badPart = newDiagonal.slice(badRootSeam);
+		for (let i = 0; i < n; i++) newDiagonal.push(...badPart);
+		cutHeight--;
 	} else {
-		let cutHeight = mountain.findLastIndex((v, i) => v.at(-1).position == mountain[0].length - 1);
-		for (let i = 0; i <= cutHeight; i++) result[i].pop(); // cut child
-		if (!result.at(-1).length) result.pop();
-		const cutLength = result[0].length;
+		newDiagonal = expand(calcMountain(diagonal), n)[0];
+		badRootHeight = mountain.findLastIndex((v, i) => {
+			const x = v.find(x => x.position >= badRootSeam);
+			return x && x.position == badRootSeam;
+		});
+	}
+	const tailHeight = cutHeight - badRootHeight;
+	const tailLength = cutLength - badRootSeam;
 
-		const badRootSeam = getBadRoot(mountain);
-		let badRootHeight = cutHeight - 1;
-		const diagonal = calcDiagonal(mountain);
-		let newDiagonal;
+	// Create Mt.Fuji shell
+	for (let i = 1; i <= n; i++) { // iteration
+		for (let j = badRootSeam; j < cutLength; j++) { // seam
+			let p = mountain[badRootHeight].find(x => x.position == j);
+			while (p && p.position > badRootSeam) {
+				p = mountain[badRootHeight][p.parentIndex];
+			}
+			const isAscending = p && p.position == badRootSeam;
 
-		const yamakazi = diagonal.at(-1).value == 1; // Yamakazi-Funka dualilty
-		if (yamakazi) { // copy bad part n times
-			newDiagonal = diagonal.slice(0, -1);
-			const badPart = newDiagonal.slice(badRootSeam);
-			for (let i = 0; i < n; i++) newDiagonal.push(...badPart);
-			cutHeight--;
-		} else {
-			newDiagonal = expand(calcMountain(diagonal), n)[0];
-			badRootHeight = mountain.findLastIndex((v, i) => {
-				const x = v.find(x => x.position >= badRootSeam);
-				return x && x.position == badRootSeam;
+			const seamHeight = 1 + result.findLastIndex((v, i) => {
+				const x = v.find(x => x.position >= j);
+				return x && x.position == j;
 			});
-		}
-		const tailLength = cutHeight - badRootHeight;
+			const isReplacingCut = j == badRootSeam;
+			const klimit = isAscending ? seamHeight + tailHeight * i : seamHeight;
+			for (let k = klimit - 1; k >= 0; k--) {
+				if (!result[k]) result[k] = [];
+				let sy = k; // Bb
+				let sx = 0;
 
-		// Create Mt.Fuji shell
-		for (let i = 1; i <= n; i++) { // iteration
-			for (let j = badRootSeam; j < cutLength; j++) { // seam
-				let isAscending = false;
-				let p = mountain[badRootHeight].find(x => x.position >= j);
-				if (p.position == j) {
-					while (p && p.position > badRootSeam) {
-						p = mountain[badRootHeight][p.parentIndex];
+				if (isAscending && k >= badRootHeight) {
+					if (k <= badRootHeight + tailHeight*(i-isReplacingCut)) { // Br replace
+						sy = badRootHeight;
+					} else if (isReplacingCut && k <= badRootHeight + tailHeight * i) { // Br extend
+						sy = k - tailHeight * (i-1);
+					} else { // Be
+						sy = k - tailHeight * i;
 					}
-					isAscending = p && p.position == badRootSeam;
-				}
-
-				const seamHeight = 1 + result.findLastIndex((v, i) => {
-					const x = v.find(x => x.position >= j);
-					return x && x.position == j;
-				});
-				const isReplacingCut = j == badRootSeam;
-				const klimit = isAscending ? seamHeight + tailLength * i : seamHeight;
-				for (let k = 0; k < klimit; k++) {
-					if (!result[k]) result.push([]);
-					let sy = k; // Bb
-					let sx = 0;
-					if (isAscending && k >= badRootHeight) {
-						if (k <= badRootHeight + tailLength*(i-isReplacingCut)) { // Br replace
-							sy = badRootHeight;
-						} else if (isReplacingCut && k <= badRootHeight + tailLength * i) { // Br extend
-							sy = k - tailLength * (i-1);
-						} else { // Be
-							sy = k - tailLength * i;
-						}
-						if (!yamakazi && isReplacingCut) {
-							sx = mountain[sy].length - 1;
-						} else {
-							sx = mountain[sy].findIndex(x => x.position >= j);
-						}
+					if (!yamakazi && isReplacingCut) {
+						sx = mountain[sy].length - 1;
 					} else {
-						if (isReplacingCut) {
-							sx = mountain[sy].length - 1;
-						} else {
-							sx = mountain[sy].findIndex(x => x.position >= j);
-						}
+						sx = mountain[sy].findIndex(x => x.position >= j);
 					}
-					const sourceParent = mountain[sy][mountain[sy][sx].parentIndex];
-					const parentShifts = i - isReplacingCut;
-					let parentPosition = -1;
-					if (sourceParent) {
-						const pos = sourceParent.position;
-						if (pos >= badRootSeam) {
-							parentPosition = pos + parentShifts*(cutLength-badRootSeam);
-						} else {
-							parentPosition = pos;
-						}
+				} else {
+					if (isReplacingCut) {
+						sx = mountain[sy].length - 1;
+					} else {
+						sx = mountain[sy].findIndex(x => x.position >= j);
 					}
-					const parentIndex = result[k].findIndex(x => x.position == parentPosition);
-					result[k].push({
-						value: parentIndex == -1 ? newDiagonal[j+(cutLength-badRootSeam)*i].value : NaN,
-						position: j + (cutLength-badRootSeam)*i,
-						parentIndex: parentIndex,
-					});
 				}
+				const sourceParent = mountain[sy][mountain[sy][sx].parentIndex];
+				const parentShifts = i - isReplacingCut;
+				let parentPosition = sourceParent ? sourceParent.position : -1;
+				if (parentPosition >= badRootSeam) parentPosition += parentShifts * tailLength;
+				const parentIndex = result[k].findIndex(x => x.position == parentPosition);
+				let value;
+				if (parentIndex == -1) {
+					value = newDiagonal[j + tailLength * i].value;
+				} else {
+					const leftUp = result[k+1].find(x => x.position >= j + tailLength * i);
+					value = result[k][parentIndex].value + leftUp.value;
+				}
+				result[k].push({
+					value: value,
+					position: j + tailLength * i,
+					parentIndex: parentIndex,
+				});
 			}
 		}
 	}
 
-	// Build number from ltr, ttb
-	for (let i = result.length-1; i >= 0; i--) {
-		if (!result[i].length) {
-			result.pop();
-			continue;
-		}
-		for (let j = 0; j < result[i].length; j++) {
-			if (!isNaN(result[i][j].value)) continue;
-			const k = result[i+1].findIndex(x => x.position >= result[i][j].position); // find left-up
-			result[i][j].value = result[i][result[i][j].parentIndex].value + result[i+1][k].value;
-		}
-	}
 	return result;
 }
