@@ -9,13 +9,13 @@ function lexicographic_compare(a, b, element_compare) {
 	}
 }
 
-function entry_compare(a, b) {
+function entry_compare(a, b) { // each entry = [value, separator]
 	if (a[0] == b[0]) return mountain_compare(a[1], b[1]);
 	return a[0] > b[0] ? 1 : -1;
 }
-const column_compare = (a, b) => lexicographic_compare(a, b, entry_compare);
-const mountain_compare = (a, b) => lexicographic_compare(a, b, column_compare);
-const vertical_compare = (a, b) => lexicographic_compare(a, b, mountain_compare);
+const column_compare = (a, b) => lexicographic_compare(a, b, entry_compare); // each column = [entry,entry,...,entry]
+const mountain_compare = (a, b) => lexicographic_compare(a, b, column_compare); // each mountain = [column,column,...,column]
+const vertical_compare = (a, b) => lexicographic_compare(a, b, mountain_compare); // each vertical = [separator,separator,...,separator]
 
 function mountain_is_limit(m) {
 	return m.length > 0 && m.at(-1).length > 0;
@@ -48,11 +48,18 @@ function calculate_height(A, i, j) {
 	let height = 0;
 	let current_i = i;
 	let current_j = j;
+
+	const verticals = A.map(column_verticals);
 	
 	while (true) {
 		const [parent_i, parent_j] = mountain_parent(A, current_i, current_j);
 		if (parent_i < 0 || parent_j < 0) break;
+
 		height++;
+		const sep = verticals[current_i][current_j];
+		const parent_sep = verticals[parent_i][parent_j];
+		if (parent_j > 0 && (!parent_sep || vertical_compare(sep, parent_sep) != 0)) break;
+
 		current_i = parent_i;
 		current_j = parent_j;
 	}
