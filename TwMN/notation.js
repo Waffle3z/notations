@@ -35,8 +35,6 @@ class notation {
 	}
 
 	static convertToNotation(s) {
-		const mountain = notation.fromString(s);
-		const result = notation.address ? mountain : addressToHeight(mountain);
-		return mountain_display(result);
+		return mountain_display(notation.fromString(s), notation.address);
 	}
 }

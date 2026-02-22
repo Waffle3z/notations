@@ -21,9 +21,10 @@ function mountain_is_limit(m) {
 	return m.length > 0 && m.at(-1).length > 0;
 }
 
-function mountain_display(m) {
+function mountain_display(m, address) {
+	if (!address) m = addressToHeight(m);
 	return m.map(column => `(${column.map(([v, sep]) =>
-		sep.every(c => !c.length) ? ','.repeat(sep.length) + v : mountain_display(sep) + v
+		sep.every(c => !c.length) ? ','.repeat(sep.length) + v : mountain_display(sep, address) + v
 	).join('')})`).join('');
 }
 
