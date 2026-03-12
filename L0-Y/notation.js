@@ -139,7 +139,10 @@ class notation {
 		const matrix = notation.fromString(value);
 		let str = notation.toString(matrix);
 		if (notation.compress) {
-			str = str.replaceAll(")(", " ").replace("(", "").replace(")", "").replaceAll(",", "");
+			str = str.replace(/\d+/g, m => {
+				m = +m;
+				return m >= 10 && m <= 35 ? String.fromCharCode(55 + m) : m;
+			}).replaceAll(")(", " ").replace(/[(),]/g, "");
 		}
 		return str;
 	}

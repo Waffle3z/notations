@@ -150,7 +150,10 @@ class notation {
 		} else {
 			str = notation.toString(notation.simplify ? matrixSimplify(matrix) : matrix);
 			if (notation.compress) {
-				str = str.replaceAll(")(", " ").replace("(", "").replace(")", "").replaceAll(",", "");
+				str = str.replace(/\d+/g, m => {
+					m = +m;
+					return m >= 10 && m <= 35 ? String.fromCharCode(55 + m) : m;
+				}).replaceAll(")(", " ").replace(/[(),]/g, "");
 			}
 		}
 		
