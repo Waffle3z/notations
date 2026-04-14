@@ -348,7 +348,8 @@ class notation {
 
 	static toString(seq) {
 		if (seq.length === 0) return "∅";
-		return seq.map(item => item.starred ? item.value + '*' : item.value).join(', ');
+		const sep = notation.spaced ? ', ' : ',';
+		return seq.map(item => item.starred ? item.value + '*' : item.value).join(sep);
 	}
 
 	static fromString(s) {
@@ -366,4 +367,10 @@ class notation {
 	static convertToNotation(value) {
 		return notation.toString(notation.fromString(value));
 	}
+
+	static spaced = true;
+
+	static parameters = [
+		{type: "checkbox", label: "Spaced", id: "spaced"},
+	]
 };
