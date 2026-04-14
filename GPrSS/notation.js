@@ -348,8 +348,7 @@ class notation {
 
 	static toString(seq) {
 		if (seq.length === 0) return "∅";
-		const sep = notation.spaced ? ', ' : ',';
-		return seq.map(item => item.starred ? item.value + '*' : item.value).join(sep);
+		return seq.map(item => item.starred ? item.value + '*' : item.value).join(',');
 	}
 
 	static fromString(s) {
@@ -365,12 +364,17 @@ class notation {
 	}
 
 	static convertToNotation(value) {
-		return notation.toString(notation.fromString(value));
+		const seq = notation.fromString(value);
+		if (seq.length === 0) return "∅";
+		const sep = notation.commas ? (notation.spaced ? ', ' : ',') : ' ';
+		return seq.map(item => item.starred ? item.value + '*' : item.value).join(sep);
 	}
 
 	static spaced = true;
+	static commas = true;
 
 	static parameters = [
-		{type: "checkbox", label: "Spaced", id: "spaced"},
+		{type: "checkbox", label: "Commas", id: "commas"},
+		{type: "checkbox", label: "Spaced", id: "spaced", visibleIf: () => notation.commas},
 	]
 };
