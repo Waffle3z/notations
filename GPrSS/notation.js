@@ -167,10 +167,33 @@ function completeAndNormalize(rawSeq, start, segment, startToSegment) {
 			break;
 		}
 	}
-	if (pos < rawSeq.length && !rawSeq[pos].starred && rawSeq[pos].value > firstVal) {
-		normalized.push({ value: rawSeq[pos].value - firstVal, starred: true });
+	return { normalized, endPos: pos };
+}
+
+function compareCompletedWithTail(compA, startA, segA, compB, startB, segB, rawSeq) {
+	const firstValA = segA[0].value;
+	const firstValB = segB[0].value;
+	const endPosA = startA + compA.length;
+	const endPosB = startB + compB.length;
+
+	let extendedA = compA.slice();
+	let extendedB = compB.slice();
+	let weakA = false, weakB = false;
+
+	if (endPosA < rawSeq.length && !rawSeq[endPosA].starred && rawSeq[endPosA].value > firstValA) {
+		extendedA.push({ value: rawSeq[endPosA].value - firstValA, starred: true });
+		weakA = true;
 	}
-	return normalized;
+	if (endPosB < rawSeq.length && !rawSeq[endPosB].starred && rawSeq[endPosB].value > firstValB) {
+		extendedB.push({ value: rawSeq[endPosB].value - firstValB, starred: true });
+		weakB = true;
+	}
+
+	const cmp = compareSegmentsByOrder(extendedA, extendedB);
+	if (cmp !== 0) return cmp;
+	if (weakA && !weakB) return -1;
+	if (!weakA && weakB) return 1;
+	return 0;
 }
 
 function findBadRootForLength1(rawSeq, lastValue) {
@@ -200,7 +223,7 @@ function getBadRoot(rawSeq, segments, startIndices, startToSegment, lastValue) {
 	let targetSeg = lastSegment;
 	let targetStart = startIndices[lastSegIndex];
 	let targetExt = extendAndNormalize(rawSeq, targetStart, targetSeg);
-	let targetCompleted = completeAndNormalize(rawSeq, targetStart, targetSeg, startToSegment);
+	let targetComp = completeAndNormalize(rawSeq, targetStart, targetSeg, startToSegment);
 
 	let found = false;
 	let badRoot = null;
@@ -217,10 +240,14 @@ function getBadRoot(rawSeq, segments, startIndices, startToSegment, lastValue) {
 
 		pendingRoots.push(candStart);
 		const candExt = extendAndNormalize(rawSeq, candStart, candSeg);
-		const candCompleted = completeAndNormalize(rawSeq, candStart, candSeg, startToSegment);
+		const candComp = completeAndNormalize(rawSeq, candStart, candSeg, startToSegment);
 		const extLess = compareSequences(candExt, targetExt) < 0;
-		const strengthLe = compareSegmentsByOrder(candCompleted, targetCompleted) <= 0;
-		const condition = extLess && strengthLe;
+		const strengthLess = compareCompletedWithTail(
+			candComp.normalized, candStart, candSeg,
+			targetComp.normalized, targetStart, targetSeg,
+			rawSeq
+		) < 0;
+		const condition = extLess && strengthLess;
 
 		if (valCand < valCurr) {
 			if (condition) {
@@ -228,11 +255,11 @@ function getBadRoot(rawSeq, segments, startIndices, startToSegment, lastValue) {
 				found = true;
 				break;
 			} else {
-				if (extLess && !strengthLe) {
+				if (extLess && !strengthLess) {
 					targetSeg = candSeg;
 					targetStart = candStart;
 					targetExt = candExt;
-					targetCompleted = candCompleted;
+					targetComp = candComp;
 				}
 				currentSegIndex = i;
 				currentSeg = candSeg;
@@ -296,7 +323,7 @@ function expandSequence(rawSeq, m) {
 class notation {
 	static title = "GPrSS-UPS";
 	static header = "Grouped PrSS - Upper Projection Sequence";
-	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1493646574595735613'>Definition</a> by alice_52892";
+	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1493680618762932355'>Definition</a> by alice_52892";
 
 	static lessOrEqual(a, b) {
 		return compareSequences(a, b) <= 0;
