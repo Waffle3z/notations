@@ -112,26 +112,26 @@ function compareSegmentsByOrder(segA, segB) {
 	}
 }
 
-function prepareSegment(seg, start, rawSeq) {
-	const firstVal = seg[0].value;
-	let extendedSeg = seg.slice();
-	let isWeak = false;
-	const nextIdx = start + seg.length;
-	if (nextIdx < rawSeq.length && !rawSeq[nextIdx].starred && rawSeq[nextIdx].value > firstVal) {
-		extendedSeg = extendedSeg.concat([{ value: rawSeq[nextIdx].value, starred: true }]);
-		isWeak = true;
+function getValidRawWithEnd(seg, start, rawSeq) {
+	const firstValSeg = seg[0].value;
+	const segLen = seg.length;
+	let legalEnd = start + segLen;
+	while (legalEnd < rawSeq.length && rawSeq[legalEnd].value > firstValSeg) {
+		legalEnd++;
 	}
-	return { segment: extendedSeg, isWeak };
-}
-
-function compareSegmentsWithTailPreparation(segA, startA, segB, startB, rawSeq) {
-	const prepA = prepareSegment(segA, startA, rawSeq);
-	const prepB = prepareSegment(segB, startB, rawSeq);
-	const cmp = compareSegmentsByOrder(prepA.segment, prepB.segment);
-	if (cmp !== 0) return cmp;
-	if (prepA.isWeak && !prepB.isWeak) return -1;
-	if (!prepA.isWeak && prepB.isWeak) return 1;
-	return 0;
+	let targetIdx = legalEnd;
+	let minVal = Infinity;
+	for (let i = start + segLen; i < legalEnd; i++) {
+		const item = rawSeq[i];
+		if (!item.starred && item.value > firstValSeg) {
+			if (item.value < minVal) {
+				minVal = item.value;
+				targetIdx = i;
+			}
+		}
+	}
+	const validRaw = rawSeq.slice(start, targetIdx);
+	return { raw: validRaw, endIdx: targetIdx };
 }
 
 function extendAndNormalize(rawSeq, start, segment) {
@@ -147,53 +147,96 @@ function extendAndNormalize(rawSeq, start, segment) {
 
 function completeAndNormalize(rawSeq, start, segment, startToSegment) {
 	const firstVal = segment[0].value;
-	const normalized = segment.map(item => ({ value: item.value - firstVal, starred: item.starred }));
-	let pos = start + segment.length;
-	let lastStart = start;
-	let lastSeg = segment;
+	let resultNorm = [];
+	let currentEndIdx;
+
+	const { raw: firstRaw, endIdx: firstEnd } = getValidRawWithEnd(segment, start, rawSeq);
+	for (const item of firstRaw) {
+		resultNorm.push({ value: item.value - firstVal, starred: item.starred });
+	}
+	currentEndIdx = firstEnd;
+
 	while (true) {
-		const nextSeg = startToSegment.get(pos);
+		if (currentEndIdx >= rawSeq.length) break;
+		const nextItem = rawSeq[currentEndIdx];
+		if (nextItem.starred || nextItem.value <= firstVal) break;
+		const nextSeg = startToSegment.get(currentEndIdx);
 		if (!nextSeg) break;
-		if (nextSeg[0].value <= firstVal) break;
-		const cmp = compareSegmentsWithTailPreparation(nextSeg, pos, lastSeg, lastStart, rawSeq);
-		if (cmp <= 0) {
-			for (const item of nextSeg) {
-				normalized.push({ value: item.value - firstVal, starred: item.starred });
-			}
-			lastStart = pos;
-			lastSeg = nextSeg;
-			pos += nextSeg.length;
+
+		const { raw: nextRaw, endIdx: nextEnd } = getValidRawWithEnd(nextSeg, currentEndIdx, rawSeq);
+		if (nextRaw.length === 0) break;
+
+		const nextNorm = nextRaw.map(item => ({ value: item.value - firstVal, starred: item.starred }));
+		const cmp = compareCompletedWithTail(
+			resultNorm, start, segment,
+			nextNorm, currentEndIdx, nextSeg,
+			rawSeq
+		);
+
+		if (cmp > 0) {
+			resultNorm.push(...nextNorm);
+			currentEndIdx = nextEnd;
 		} else {
 			break;
 		}
 	}
-	return { normalized, endPos: pos };
+
+	return { normalized: resultNorm };
 }
 
 function compareCompletedWithTail(compA, startA, segA, compB, startB, segB, rawSeq) {
 	const firstValA = segA[0].value;
 	const firstValB = segB[0].value;
-	const endPosA = startA + compA.length;
-	const endPosB = startB + compB.length;
 
-	let extendedA = compA.slice();
-	let extendedB = compB.slice();
-	let weakA = false, weakB = false;
-
-	if (endPosA < rawSeq.length && !rawSeq[endPosA].starred && rawSeq[endPosA].value > firstValA) {
-		extendedA.push({ value: rawSeq[endPosA].value - firstValA, starred: true });
-		weakA = true;
-	}
-	if (endPosB < rawSeq.length && !rawSeq[endPosB].starred && rawSeq[endPosB].value > firstValB) {
-		extendedB.push({ value: rawSeq[endPosB].value - firstValB, starred: true });
-		weakB = true;
+	function addTailStar(seq, start, firstVal) {
+		const newSeq = seq.slice();
+		let weak = false;
+		const endPos = start + newSeq.length;
+		if (endPos < rawSeq.length && !rawSeq[endPos].starred && rawSeq[endPos].value > firstVal) {
+			newSeq.push({ value: rawSeq[endPos].value - firstVal, starred: true });
+			weak = true;
+		}
+		return { seq: newSeq, weak };
 	}
 
-	const cmp = compareSegmentsByOrder(extendedA, extendedB);
-	if (cmp !== 0) return cmp;
-	if (weakA && !weakB) return -1;
-	if (!weakA && weakB) return 1;
-	return 0;
+	function compareRecursive(seqA, startA, firstValA, seqB, startB, firstValB) {
+		const { seq: extA, weak: weakA } = addTailStar(seqA, startA, firstValA);
+		const { seq: extB, weak: weakB } = addTailStar(seqB, startB, firstValB);
+
+		let idxA = -1;
+		for (let i = extA.length - 1; i >= 0; i--) {
+			if (!extA[i].starred) {
+				let ok = true;
+				for (let j = i+1; j < extA.length; j++) if (extA[i].value >= extA[j].value) { ok = false; break; }
+				if (ok) { idxA = i; break; }
+			}
+		}
+		if (idxA === -1) idxA = 0;
+		let idxB = -1;
+		for (let i = extB.length - 1; i >= 0; i--) {
+			if (!extB[i].starred) {
+				let ok = true;
+				for (let j = i+1; j < extB.length; j++) if (extB[i].value >= extB[j].value) { ok = false; break; }
+				if (ok) { idxB = i; break; }
+			}
+		}
+		if (idxB === -1) idxB = 0;
+
+		const trimmedA = extA.slice(idxA);
+		const trimmedB = extB.slice(idxB);
+		const cmp = compareSegmentsByOrder(trimmedA, trimmedB);
+		if (cmp !== 0) return cmp;
+		if (weakA !== weakB) return weakA ? -1 : 1;
+		if (idxA === 0 && idxB !== 0) return -1;
+		if (idxA !== 0 && idxB === 0) return 1;
+		const prefixA = extA.slice(0, idxA);
+		const prefixB = extB.slice(0, idxB);
+		if (prefixA.length === 0 && prefixB.length === 0) return 0;
+		if (prefixA.length === 0) return -1;
+		if (prefixB.length === 0) return 1;
+		return compareRecursive(prefixA, startA, firstValA, prefixB, startB, firstValB);
+	}
+	return compareRecursive(compA, startA, firstValA, compB, startB, firstValB);
 }
 
 function findBadRootForLength1(rawSeq, lastValue) {
@@ -344,7 +387,7 @@ function toPsi(seq) {
 class notation {
 	static title = "GPrSS-UPS";
 	static header = "Grouped PrSS - Upper Projection Sequence";
-	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1493680618762932355'>Definition</a> by alice_52892";
+	static footer = "<a href='https://discord.com/channels/206932820206157824/209051725741424641/1494037672291991703'>Definition</a> by alice_52892";
 
 	static lessOrEqual(a, b) {
 		return compareSequences(a, b) <= 0;
