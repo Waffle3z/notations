@@ -320,6 +320,27 @@ function expandSequence(rawSeq, m) {
 	return resultSeq;
 }
 
+function toPsi(seq) {
+	let out = "";
+	seq.forEach((x, i) => {
+		let v = 0;
+		out += x.starred ? "1" : "0";
+		if (i+1 < seq.length) {
+			let n = seq[i+1].value - x.value;
+			if (n < 0) {
+				out += ")".repeat(-n) + "+";
+			} else if (n == 0) {
+				out += "+";
+			} else {
+				out += "(";
+			}
+		} else {
+			out += ")".repeat(x.value);
+		}
+	});
+	return out;
+}
+
 class notation {
 	static title = "GPrSS-UPS";
 	static header = "Grouped PrSS - Upper Projection Sequence";
@@ -330,8 +351,15 @@ class notation {
 	}
 
 	static expandLimit(n) {
-		const seq = [{ value: 0, starred: false }];
-		for (let i = 1; i <= n; i++) {
+		if (notation.offset) {
+			let seq = [{ value: 0, starred: false }];
+			for (let i = 1; i <= n; i++) {
+				seq.push({ value: i, starred: true });
+			}
+			return seq;
+		}
+		let seq = [{ value: 0, starred: false }, { value: 1, starred: false }];
+		for (let i = 2; i <= n; i++) {
 			seq.push({ value: i, starred: true });
 		}
 		return seq;
@@ -366,15 +394,20 @@ class notation {
 	static convertToNotation(value) {
 		const seq = notation.fromString(value);
 		if (seq.length === 0) return "∅";
+		if (notation.psi) return toPsi(seq);
 		const sep = notation.commas ? (notation.spaced ? ', ' : ',') : ' ';
 		return seq.map(item => item.starred ? item.value + '*' : item.value).join(sep);
 	}
 
 	static spaced = true;
 	static commas = true;
+	static psi = false;
+	static offset = false;
 
 	static parameters = [
-		{type: "checkbox", label: "Commas", id: "commas"},
-		{type: "checkbox", label: "Spaced", id: "spaced", visibleIf: () => notation.commas},
+		{type: "checkbox", label: "Commas", id: "commas", visibleIf: () => !notation.psi},
+		{type: "checkbox", label: "Spaced", id: "spaced", visibleIf: () => notation.commas && !notation.psi},
+		{type: "checkbox", label: "Psi", id: "psi"},
+		{type: "checkbox", label: "Offset", id: "offset", url: true},
 	]
 };
