@@ -57,10 +57,6 @@ function calculate_height(A, i, j) {
 		if (parent_i < 0 || parent_j < 0) break;
 
 		height++;
-		const sep = verticals[current_i][current_j];
-		const parent_sep = verticals[parent_i][parent_j];
-		if (parent_j > 0 && (!parent_sep || vertical_compare(sep, parent_sep) != 0)) break;
-
 		current_i = parent_i;
 		current_j = parent_j;
 	}
