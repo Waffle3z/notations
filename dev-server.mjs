@@ -42,7 +42,7 @@ function sendFile(res, filePath, statusCode = 200) {
 	const type = MIME[ext] || 'application/octet-stream';
 	fs.createReadStream(filePath)
 		.on('open', () => {
-			res.writeHead(statusCode, { 'Content-Type': type });
+			res.writeHead(statusCode, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
 		})
 		.on('error', (err) => {
 			console.error('Read error:', err);

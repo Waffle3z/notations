@@ -44,7 +44,7 @@
 					await addScript(prefix + 'worm/notation.js');
 					notation.missing = true;
 				}
-				initialize();
+				if (!document.getElementById('root')) initialize();
 			})();
 		})();
 	</script>

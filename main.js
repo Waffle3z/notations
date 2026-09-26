@@ -230,6 +230,7 @@ function setIndentation(newIndentation) {
 
 
 function initialize() {
+	if (document.getElementById("root")) return; // already initialized
 	let titleElement = document.head.querySelector("title");
 	if (!titleElement) {
 		titleElement = document.createElement("title");

@@ -95,12 +95,12 @@ class notation {
 			{type: "radio", id: "entries", value: "ordinal", label: "Ordinal (0,ω)"},
 			{type: "radio", id: "entries", value: "nested", label: "Nested (0,(0,1))"},
 		]},
-		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 		{legend: "Ordinal syntax:", inputs: [
 			{type: "radio", id: "syntax", value: "veblen", label: "Veblen (φ(ω,0))"},
 			{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η (ψ(ψ₁(ψ₁(1))))"},
 			{type: "radio", id: "syntax", value: "bocf", label: "Buchholz (ψ(ψ₁(ψ₁(1))))"},
 		]},
+		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 	]
 
 	static lessOrEqual(a, b) {

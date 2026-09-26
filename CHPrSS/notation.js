@@ -74,21 +74,21 @@ class notation {
 	static header = "Collapsing HPrSS";
 	static entries = "ordinal";
 	static aliases = true;
-	static cnf = false;
-	static syntax = "psi";
+	static cnf = true;
+	static syntax = "named";
 
 	static parameters = [
 		{legend: "Entries:", inputs: [
 			{type: "radio", id: "entries", value: "ordinal", label: "Ordinal (0,Ω)"},
 			{type: "radio", id: "entries", value: "nested", label: "Nested (0,(1))"},
 		]},
-		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 		{legend: "Ordinal syntax:", inputs: [
 			{type: "radio", id: "syntax", value: "psi", label: "Buchholz ψ"},
-			{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η (ψ(Ω^3) = η₀)"},
-			{type: "radio", id: "syntax", value: "veblen", label: "Veblen below ψ(Ω₂) (ψ(Ω^Ω^ω) = φ(1@ω))"},
+			{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η"},
+			{type: "radio", id: "syntax", value: "veblen", label: "Dimensional veblen"},
 		]},
-		{type: "checkbox", id: "cnf", label: "Cantor normal form (ψ₁(Ω) = Ω^2, ψ₂(Ω) = Ω₂·Ω)"},
+		{type: "checkbox", id: "cnf", label: "Cantor normal form (ψ₁(ψ₁(Ω)) = Ω^Ω)"},
+		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 	]
 
 	static lessOrEqual(a, b) {
