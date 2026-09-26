@@ -457,7 +457,9 @@ function initialize() {
 	});
 }
 
-if (document.readyState === 'complete') {
+if (window.deferInit) {
+	// 404.html calls initialize after loading the notation
+} else if (document.readyState === 'complete') {
 	initialize();
 } else {
 	window.addEventListener("load", initialize);

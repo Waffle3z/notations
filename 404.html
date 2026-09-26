@@ -16,28 +16,36 @@
 			let notationDir = decodeURIComponent(segments[segments.length - 1] || 'worm');
 			let encodedNotation = encodeURIComponent(notationDir);	
 			let prefix = '/' + segments.slice(0, -1).join("/") + (segments.length > 1 ? '/' : '');
-			function addScript(src, cb) {
-				let s = document.createElement('script');
-				s.async = false;
-				s.src = src;
-				s.onerror = function() {
-					s.remove();
-					let fallback = prefix + 'worm/notation.js';
-					console.log(fallback);
-					if (src !== fallback) {
-						addScript(fallback, function() {
-							notation.missing = true;
-						});
-					}
-				};
-				s.onload = function() { if (cb) cb(); };
-				document.body.appendChild(s);
+			function addScript(src) {
+				return new Promise((resolve, reject) => {
+					let s = document.createElement('script');
+					s.async = false;
+					s.src = src;
+					s.onload = resolve;
+					s.onerror = reject;
+					document.body.appendChild(s);
+				});
 			}
 
-			// Load main.js first, then notation.js
-			addScript(prefix + 'main.js', function() {
-				addScript(prefix + encodedNotation + '/notation.js');
-			});
+			// main.js waits for this to call initialize once the notation is loaded
+			window.deferInit = true;
+			(async function() {
+				let src = prefix + encodedNotation + '/notation.js';
+				let response = await fetch(src).catch(() => null);
+				let text = response && response.ok ? await response.text() : null;
+				// a notation lists the shared scripts it uses on a line "// requires: ordinals/bocf.js ..."
+				let match = text && text.match(/^\/\/ requires:(.*)$/m);
+				let requires = match ? match[1].split(/\s+/).filter(Boolean) : [];
+				await addScript(prefix + 'main.js');
+				for (let dep of requires) await addScript(prefix + dep);
+				if (text) {
+					await addScript(src);
+				} else {
+					await addScript(prefix + 'worm/notation.js');
+					notation.missing = true;
+				}
+				initialize();
+			})();
 		})();
 	</script>
 </body>
