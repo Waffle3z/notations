@@ -8,7 +8,7 @@
 const {countable, isOne, cmp} = BOCF;
 
 // the extended notations stand in for the plain ones: HPrSS is collapsing HPrSS, LPrSS transfinite LPrSS
-const SOURCES = {HPrSS: "../CHPrSS/notation.js", LPrSS: "../TLPrSS/notation.js", "? sequence": "../QSeq/notation.js"};
+const SOURCES = {HPrSS: "../CHPrSS/notation.js", LPrSS: "../TLPrSS/notation.js", "? sequence": "../QSeq/notation.js", "T? sequence": "../TQSeq/notation.js"};
 const texts = {};
 
 // a fresh copy of a notation class, so each column keeps its own settings
@@ -200,6 +200,7 @@ async function addColumn(name, values = {}) {
 	await addColumn("Ordinal", {syntax: "named", cnf: true});
 	await addColumn("Ordinal", {syntax: "veblen"});
 	await addColumn("HPrSS");
-	await addColumn("? sequence");
 	await addColumn("LPrSS");
+	await addColumn("? sequence");
+	await addColumn("T? sequence");
 })();
