@@ -134,6 +134,73 @@ function show(t, opts = {}) {
 	return runs(t).map(([s, k]) => isOne(s) ? String(k) : principal(s, opts) + (k > 1 ? "·" + k : "")).join("+") || "0";
 }
 
+// ---------------------------------------------------------------- fundamental sequences
+// Terms as sequences (collapsing HPrSS): ψ_u(b) is the entry base+u followed by b's entries above it.
+// Expanding the sequence gives Buchholz's fundamental sequences, extended: expand(t, n) = t[n].
+
+const toSeq = (t, base = []) => t.flatMap(([u, b]) => {
+	const e = add(base, u);
+	return [e, ...toSeq(b, add(e, ONE))];
+});
+
+// sequence -> term: the children of an entry are the following run of larger entries
+function fromSeq(s, lo = 0, hi = s.length, base = null) {
+	const out = [];
+	for (let i = lo, j; i < hi; i = j) {
+		for (j = i + 1; j < hi && cmp(s[i], s[j]) < 0; j++);
+		out.push([base ? sub(s[i], add(base, ONE)) : s[i], fromSeq(s, i + 1, j, s[i])]);
+	}
+	return out;
+}
+
+const parent = (s, i) => s.findLastIndex((x, j) => j < i && cmp(x, s[i]) < 0);
+
+function index(s, j) {
+	const p = parent(s, j);
+	return p < 0 ? s[j] : sub(s[j], add(s[p], ONE));
+}
+
+// The expansion s[n], or {mu, K} when the last entry has cofinality Ω_(mu+1): it is resolved
+// by an ancestor with index ≤ mu, and K builds the sequence around a nested copy.
+function expandSeq(s, n) {
+	const body = s.slice(0, -1), p = parent(s, s.length - 1);
+	const base = p < 0 ? [] : add(s[p], ONE);
+	const lam = sub(s.at(-1), base);
+	const climb = (j, mu) => {
+		while (j >= 0 && cmp(mu, index(s, j)) < 0) j = parent(s, j);
+		return j;
+	};
+	if (!lam.length) return p < 0 ? body : body.concat(...Array(n).fill(s.slice(p, -1)));
+	if (isOne(lam.at(-1))) {
+		const mu = lam.slice(0, -1), cp = add(base, mu);
+		const r = p < 0 ? -1 : climb(p, mu);
+		if (r < 0) return {mu, K: L => L ? [...body, cp, ...L.map(x => add(add(cp, ONE), x))] : body};
+		const inc = sub(cp, s[r]), bad = s.slice(r, -1);
+		let out = body, shift = s[r];
+		for (let k = 1; k <= n; k++) {
+			shift = add(shift, inc);
+			out = out.concat(bad.map(x => add(shift, sub(x, s[r]))));
+		}
+		return out;
+	}
+	// a limit index: expand it as a sequence of its own
+	const res = expandSeq(toSeq(lam), n);
+	if (Array.isArray(res)) return [...body, add(base, fromSeq(res))];
+	const K = L => [...body, add(base, fromSeq(res.K(L)))];
+	const r = p < 0 ? -1 : climb(p, res.mu);
+	if (r < 0) return {mu: res.mu, K};
+	const rb = add(s[r], ONE);
+	let L = null;
+	for (let k = 0; k < n; k++) L = K(L).slice(r + 1).map(x => sub(x, rb));
+	return K(L);
+}
+
+// t[n] for a countable term t
+function expand(t, n) {
+	const res = expandSeq(toSeq(t), n);
+	return Array.isArray(res) ? fromSeq(res) : t.slice(0, -1);
+}
+
 // "0,(0,1),2": a sequence with ordinal entries, where inner(seq) is the value of a nested sequence
 function parseNested(str, inner) {
 	let i = 0;
@@ -157,6 +224,6 @@ function parseNested(str, inner) {
 }
 
 return {ONE, nat, isOne, isNat, countable, lex, cmpSummand, cmp, add, sub, log, omega, below, digits, undigits,
-	subscriptDigits, wrap, principal, runs, show, parseNested};
+	subscriptDigits, wrap, principal, runs, show, parseNested, toSeq, fromSeq, expandSeq, expand};
 
 })();

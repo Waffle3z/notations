@@ -8,8 +8,8 @@
 const {countable, isOne, cmp} = BOCF;
 
 // the extended notations stand in for the plain ones: HPrSS is collapsing HPrSS, LPrSS transfinite LPrSS
-const SOURCES = {HPrSS: "../CHPrSS/notation.js", LPrSS: "../TLPrSS/notation.js", "? sequence": "../QSeq/notation.js", "T? sequence": "../TQSeq/notation.js",
-	"Nothing OCF": "../NOCF/notation.js", SSS: "../SSS/notation.js"};
+const SOURCES = {HPrSS: "../CHPrSS/notation.js", PSS: "../PSS/notation.js", LPrSS: "../TLPrSS/notation.js", "? sequence": "../QSeq/notation.js", "T? sequence": "../TQSeq/notation.js",
+	"Nothing OCF": "../NOCF/notation.js", SSS: "../SSS/notation.js", DoR: "../DoR/notation.js"};
 const texts = {};
 
 // a fresh copy of a notation class, so each column keeps its own settings
@@ -57,13 +57,13 @@ let rows = [{term: null}]; // term null is the EBO row
 let nextId = 0;
 
 function cellText(col, term) {
-	const limit = col.N.limit;
-	if (!term) return limit ? {text: null} : col.N.ebo ? {text: col.N.toString(col.N.ebo), seq: col.N.ebo} : {text: "Limit", limit: true};
+	const limit = col.N.limit, show = seq => col.N.convertToNotation ? col.N.convertToNotation(col.N.toString(seq)) : col.N.toString(seq);
+	if (!term) return limit ? {text: null} : col.N.ebo ? {text: show(col.N.ebo), seq: col.N.ebo} : {text: "Limit", limit: true};
 	if (limit && !cmp(term, limit)) return {text: "Limit", limit: true};
 	const key = JSON.stringify(term);
 	if (!col.cache.has(key)) {
 		const seq = col.N.fromOrdinal(term);
-		const text = !seq ? null : col.N.convertToNotation ? col.N.convertToNotation(col.N.toString(seq)) : col.N.toString(seq);
+		const text = !seq ? null : show(seq);
 		col.cache.set(key, {text, seq});
 	}
 	return col.cache.get(key);
@@ -203,9 +203,11 @@ async function addColumn(name, values = {}) {
 	await addColumn("Ordinal", {syntax: "named", cnf: true});
 	await addColumn("Ordinal", {syntax: "veblen"});
 	await addColumn("HPrSS");
+	await addColumn("PSS");
 	await addColumn("LPrSS");
 	await addColumn("? sequence");
 	await addColumn("T? sequence");
 	await addColumn("Nothing OCF");
 	await addColumn("SSS");
+	await addColumn("DoR");
 })();

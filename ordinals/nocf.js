@@ -45,14 +45,27 @@ function expand(s, n) {
 	return out;
 }
 
-// fundamental sequences: SSS expansion, except that an element s+k with s a limit above the
-// previous element is s, so no successor stands where a limit could
+// fundamental sequences: SSS expansion, except that no successor stands where a limit could. The
+// last entry x of an element ends its innermost subterm, at depth x. If that subterm is a natural
+// number it goes, which leaves its parent a successor, and so on up to the first limit: this drops
+// the final run that rises by steps of 0 or 1. Below that limit, a run of x's preceded by a larger
+// entry is the +k of a subterm at depth x whose predecessor is a limit, and it goes too, down to
+// deeper depths. Each step is taken only if the element stays above the previous one.
 function fundamental(s, n) {
-	const e = expand(s, n);
+	let e = expand(s, n);
 	if (!n) return e;
-	let q = e;
-	while (q.length && q.at(-1) == Math.min(...q)) q = q.slice(0, -1);
-	return q.length && q.length < e.length && lex(q, expand(s, n - 1), (x, y) => x - y) > 0 ? q : e;
+	const prev = expand(s, n - 1), above = q => q.length && lex(q, prev, (a, b) => a - b) > 0;
+	let i = e.length - 1;
+	while (i > 0 && e[i - 1] <= e[i]) i--;
+	if (!above(e.slice(0, i))) return e;
+	e = e.slice(0, i);
+	while (true) {
+		const x = e.at(-1);
+		let q = e;
+		while (q.length && q.at(-1) == x) q = q.slice(0, -1);
+		if (!(q.at(-1) > x && above(q))) return e;
+		e = q;
+	}
 }
 
 // ---------------------------------------------------------------- value
