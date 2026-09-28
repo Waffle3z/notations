@@ -320,6 +320,10 @@ function initialize() {
 		} else {
 			cont = document.createElement("div");
 		}
+		if (param.inputs && param.visibleIf) {
+			cont.className = "param-visibility";
+			cont._visibleIf = param.visibleIf;
+		}
 		container.appendChild(cont);
 
 		let inputs = param.inputs || [param];

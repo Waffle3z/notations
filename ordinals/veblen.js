@@ -1,103 +1,115 @@
-// Veblen functions on EBOCF terms (ordinals/bocf.js), below ψ(Ω₂) = BHO.
+// Veblen functions on EBOCF terms (ordinals/bocf.js), below ψ(Ω₂) = BHO for countable values.
 //
 // Dimensional Veblen: an array of entries α@X, where the position X is itself an array, read as
-// the ordinal Σ Ω^Y·β over its entries β@Y. Then
-//   φ(..., α@X, ..., γ@0) = ψ(Ω^E·(1+γ)),  E = Σ Ω^(-1+X)·α over the entries with X > 0,
-// so φ(a,b) = φ(a@1, b@0), φ(1@2) = φ(1,0,0) = ψ(Ω^Ω) = Γ₀, φ(1@ω) = ψ(Ω^Ω^ω) = SVO,
-// φ(1@(1,0)) = ψ(Ω^Ω^Ω) = LVO, and φ(1@(1@(1@...))) approaches ψ(Ω₂).
-// Past the first digit, ψ(U + Ω^E·a) with X = ψ(U) is Φ_E(γ₀ + (-1+a)), where γ₀ is the least γ
-// with Φ_E(γ) > X: γ₀ = X+1 when X is a fixed point of Φ_E (φ(1, ζ₀+1) = ψ(Ω²+Ω)), but e.g.
-// Γ₀ = φ(Γ₀,0) gives φ(Γ₀,1) = ψ(Ω^Ω + Ω^Γ₀) and φ(Γ₀+1,0) = ψ(Ω^Ω + Ω^(Γ₀+1)).
+// the ordinal Σ Ω^Y·β over its entries β@Y. For countable coefficients,
+//   φ(..., α@X, ..., γ@0) = Φ_E(γ),  E = Σ Ω^(-1+X)·α over the entries with X > 0,
+// with Φ_E(γ) = ψ(Ω^E·(1+γ)) when nothing in the array is too large: φ(a,b) = φ(a@1, b@0),
+// φ(1@2) = φ(1,0,0) = ψ(Ω^Ω) = Γ₀, φ(1@ω) = ψ(Ω^Ω^ω) = SVO, φ(1@(1,0)) = ψ(Ω^Ω^Ω) = LVO, and
+// φ(1@(1@(1@...))) approaches ψ(Ω₂).
+// In general ψ(U + Ω^E·a), with X = ψ(U) and U's exponents above E, is Φ_E(X+a) if X is a fixed
+// point of Φ_E (φ(1, ζ₀+1) = ψ(Ω²+Ω)), Φ_E(a) if X = Φ_E(0) (Γ₀ = φ(Γ₀,0), so φ(Γ₀,1) =
+// ψ(Ω^Ω + Ω^Γ₀); y = φ(2,0,0) = φ(1,y,0)), and Φ_E(-1+a) if Φ_E(0) > X (φ(1,y+1,0) =
+// ψ(Ω^(Ω·2) + Ω^(Ω+y+1))).
+// With coefficients below Ω_(ν+1), some at least Ω_ν, the same holds for ψ_ν in base Ω_(ν+1),
+// starting from the fixed point X = Ω_ν: φ(1, Ω) = Ω, φ(1, Ω+1) = ε_(Ω+1) = ψ₁(Ω₂).
 
 const Veblen = (() => {
 
 const {ONE, isNat, cmp, add, sub, log, omega, digits, undigits, subscriptDigits, wrap, principal, runs} = BOCF;
 
-// the ψ₀-arguments occurring in t
-function psiArgs(t, out = []) {
-	for (const [u, b] of t) {
-		if (!u.length && b.length) out.push(b);
-		psiArgs(u, out);
-		psiArgs(b, out);
-	}
-	return out;
+const succ = v => add(v, ONE);
+const level = t => t[0]?.[0] ?? [];
+
+// positions are read in base Ω; at level ν they are written in base Ω_(ν+1)
+const lift = (X, v) => !cmp(v, ONE) ? X : undigits(digits(X, ONE).map(([F, k]) => [lift(F, v), k]), v);
+const unlift = (X, v) => !cmp(v, ONE) ? X : undigits(digits(X, v).map(([F, k]) => [unlift(F, v), k]), ONE);
+
+// the coefficients of E in base Ω_v, and of its exponents
+const components = (E, v) => digits(E, v).flatMap(([F, k]) => [k, ...components(F, v)]);
+
+// How X = ψ_ν(U), with U's exponents above E, sits against Φ_E: "fixed" if Φ_E(X) = X,
+// "first" if Φ_E(0) = X, "below" if Φ_E(0) > X.
+function relation(E, X, v) {
+	const lt = c => cmp(c, X) < 0, le = c => cmp(c, X) <= 0;
+	if (components(E, v).every(lt)) return "fixed";
+	// X is a common fixed point of the functions defining Φ_E: those that lower the last entry
+	// α@P to some ξ < α and put the argument at a position below P
+	const d = digits(E, v), [F, alpha] = d.at(-1);
+	const first = components(undigits(d.slice(0, -1), v), v).every(lt) && le(alpha) &&
+		components(F, v).every(cmp(alpha, ONE) ? lt : le);
+	return first ? "first" : "below";
 }
 
-// β with s = Φ_E(β), or null
-function rangeIndex(s, E) {
-	const v = veblenOf(s);
-	if (!v) return null;
-	const c = cmp(v.E, E);
-	if (c == 0) return v.arg;
-	if (c < 0) return null;
-	// s is a fixed point of Φ_E when E is built below it, and Φ_E(0) = s when E = s (φ(Γ₀,0) = Γ₀)
-	if (psiArgs(E).every(p => cmp(p, s[1]) < 0)) return [s];
-	return cmp(E, [s]) ? null : [];
+// the leading part of b whose digits in base Ω_v are above Ω_v^E; summands not below ε_(Ω_v+1)
+// are above every E (e.g. φ(ψ(Ω₂+1), 0) = ψ(Ω₂+1))
+function above(b, E, v) {
+	let i = 0;
+	while (i < b.length && (cmp(b[i][0], v) > 0 || !cmp(b[i][0], v) && !BOCF.below(b[i][1], v))) i++;
+	return [...b.slice(0, i), ...undigits(digits(b.slice(i), v).filter(([F]) => cmp(F, E) > 0), v)];
 }
-
-// the least γ with Φ_E(γ) > β
-function above(beta, E) {
-	if (!beta.length) return [];
-	const s = beta[0], i = rangeIndex(s, E);
-	if (i) return add(i, ONE);
-	const v = veblenOf(s);
-	return v && cmp(v.E, E) < 0 ? above(v.arg, E) : []; // otherwise Φ_E(0) > s
-}
-
-// Φ_E(β) = ψ(Ω^E·(1+β)), Φ_0(β) = ω^β: the (1+β)-th common fixed point of Φ_F for F < E.
-// ψ's argument starts with the digits above E of the largest ψ-argument in E and β, so that
-// the term is standard.
-function Phi(E, beta) {
-	if (!E.length) return omega(beta);
-	const args = psiArgs([[E, beta]]);
-	const M = args.reduce((m, p) => cmp(p, m) > 0 ? p : m, []);
-	const d = digits(M, ONE) ?? [];
-	for (let k = d.filter(([F]) => cmp(F, E) > 0).length; k >= 0; k--) {
-		const U = undigits(d.slice(0, k), ONE);
-		const g = U.length ? above([[[], U]], E) : [];
-		if (cmp(beta, g) >= 0) return [[[], add(U, undigits([[E, add(ONE, sub(beta, g))]], ONE))]];
-		const i = rangeIndex([[], U], E);
-		if (i && !cmp(i, beta)) return [[[], U]];
-	}
-	return [[[], undigits([[E, add(ONE, beta)]], ONE)]];
-}
-
-const phi = (a, b) => Phi(a, b);
 
 // φ of an array of entries [α, X] (the α@X), X ≥ 0
 function dimensional(entries) {
-	const sorted = entries.filter(([a]) => a.length).sort((x, y) => cmp(y[1], x[1]));
-	const E = undigits(sorted.filter(([, X]) => X.length).map(([a, X]) => [sub(X, ONE), a]), ONE);
-	return Phi(E, sorted.find(([, X]) => !X.length)?.[0] ?? []);
+	entries = entries.filter(([a]) => a.length).sort((x, y) => cmp(y[1], x[1]));
+	const beta = entries.find(([, X]) => !X.length)?.[0] ?? [];
+	const hi = entries.filter(([, X]) => X.length);
+	if (!hi.length) return omega(beta);
+	const nu = entries.map(([a]) => level(a)).reduce((m, u) => cmp(u, m) > 0 ? u : m), v = succ(nu);
+	const E = undigits(hi.map(([a, X]) => [lift(sub(X, ONE), v), a]), v);
+	// the largest ψ_ν(U) at most γ or a component, with U's exponents above E
+	let X = nu.length ? [[nu, []]] : null;
+	for (const c of [beta, ...components(E, v)]) {
+		const U = c.length && !cmp(level(c), nu) ? above(c[0][1], E, v) : [];
+		if (U.length && (!X || cmp([[nu, U]], X) > 0)) X = [[nu, U]];
+	}
+	const rel = X ? relation(E, X, v) : "below";
+	const a = rel == "fixed" ? sub(beta, X) : rel == "first" ? beta : add(ONE, beta);
+	if (!a.length) return X; // φ is not in normal form: its value is X
+	return [[nu, add(X?.[0][1] ?? [], undigits([[E, a]], v))]];
+}
+
+const phi = (a, b) => dimensional([[a, ONE], [b, []]]);
+
+// Φ_E(β) for an exponent E in base Ω (countable coefficients)
+const Phi = (E, beta) => dimensional([...digits(E, ONE).map(([F, a]) => [a, add(ONE, F)]), [beta, []]]);
+
+// s as Φ_E(β) at level ν: {E (in base Ω_(ν+1)), arg: β, v}, or null if s is Ω_ν or too large
+function decompose([nu, xi]) {
+	const v = succ(nu), d = digits(xi, v);
+	if (!d || nu.length && !xi.length) return null;
+	if (!d.at(-1)?.[0].length) return {E: [], arg: log([nu, xi]), v};
+	let X = nu.length ? [[nu, []]] : null, arg;
+	d.forEach(([E, a], i) => {
+		const rel = X ? relation(E, X, v) : "below";
+		arg = rel == "fixed" ? add(X, a) : rel == "first" ? a : sub(a, ONE);
+		X = [[nu, undigits(d.slice(0, i + 1), v)]];
+	});
+	return {E: d.at(-1)[0], arg, v};
 }
 
 // a countable summand s as Φ_E(β): {E, arg: β}, or null at or above ψ(Ω₂)
-function veblenOf(s) {
-	const d = !s[0].length && digits(s[1], ONE);
-	if (!d) return null;
-	const last = d.at(-1);
-	if (!last?.[0].length) return {E: [], arg: log(s)};
-	const U = undigits(d.slice(0, -1), ONE);
-	return {E: last[0], arg: add(U.length ? above([[[], U]], last[0]) : [], sub(last[1], ONE))};
-}
+const veblenOf = s => s[0].length ? null : decompose(s);
 
-// the entries [α, X] of s = φ(...), or null
+// the entries [α, X] of s = φ(...), or null; at level ν > 0 an exponent digit whose own digits
+// have coefficients above Ω would need a position array outside base-Ω normal form
 function entriesOf(s) {
-	const v = veblenOf(s);
-	return v && [...digits(v.E, ONE).map(([F, a]) => [a, add(ONE, F)]), [v.arg, []]];
+	const p = decompose(s);
+	if (!p) return null;
+	const d = digits(p.E, p.v), hi = d.map(([F, a]) => [a, add(ONE, unlift(F, p.v))]);
+	if (hi.some(([, X], i) => !digits(X, ONE) || cmp(lift(sub(X, ONE), p.v), d[i][0]))) return null;
+	return [...hi, [p.arg, []]];
 }
 
 // whether t is written entirely in Veblen form (with named, entirely with ω^, ε, ζ, η)
 function fits(t, named) {
-	const coefs = X => digits(X, ONE).every(([F, a]) => fits(a, named) && coefs(F));
 	return t.every(s => {
 		const v = veblenOf(s);
-		return v && (!named || isNat(v.E) && v.E.length <= 3) && fits(v.arg, named) && coefs(v.E);
+		return v && (!named || isNat(v.E) && v.E.length <= 3) && fits(v.arg, named) && components(v.E, ONE).every(c => fits(c, named));
 	});
 }
 
 // printing: φ(a,b,c) for up to 4 finite positions, α@X otherwise, and ω^, ε, ζ, η, Γ;
-// with opts.named, only ω^, ε, ζ, η; a summand that doesn't fit stays in ψ form
+// with opts.named, only ω^, ε, ζ, η, and with opts.plain, only φ; a summand that doesn't fit stays in ψ form
 
 function show(t, opts = {}) {
 	return BOCF.show(t, {...opts, countable: t => countableStr(t, opts)});
@@ -119,7 +131,9 @@ function countableStr(t, opts) {
 		if (!fits([s], opts.named)) return principal(s, {...opts, countable: x => countableStr(x, opts)});
 		const {E, arg} = veblenOf(s);
 		const name = (letter, x) => letter + (isNat(x) ? subscriptDigits(x.length) : "_" + wrap(str(x), "+·^"));
-		if (!E.length) return !arg.length ? "1" : !cmp(arg, ONE) ? "ω" : "ω^" + wrap(str(arg));
+		if (!E.length && !arg.length) return "1";
+		if (opts.plain) return `φ(${arrayStr(entriesOf(s))})`;
+		if (!E.length) return !cmp(arg, ONE) ? "ω" : "ω^" + wrap(str(arg));
 		if (isNat(E) && E.length <= 3) return name("εζη"[E.length - 1], arg);
 		if (!cmp(E, [[ONE, []]])) return name("Γ", arg);
 		return `φ(${arrayStr(entriesOf(s))})`;

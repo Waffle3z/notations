@@ -2,7 +2,7 @@
 //
 // A term is a list of summands [u, b] = ψ_u(b) in non-increasing order, so 0 = [], 1 = ψ₀(0),
 // n = n copies of 1, ω = ψ₀(1), Ω_u = ψ_u(0). Terms compare by their bracket strings, which is
-// the ordinal order on standard terms (Lean: Googology/Minimal/Extended; tools/ebocf.py).
+// the ordinal order on standard terms.
 
 const BOCF = (() => {
 
@@ -81,8 +81,8 @@ function digits(t, v) {
 // Σ Ω_v^F·k, with Ω_v^F·ω^c = ω^(Ω_v·F + c)
 const undigits = (d, v) => d.flatMap(([F, k]) => k.flatMap(s => omega(add(mulOmega(F, v), log(s)))));
 
-// printing: opts.cnf writes terms in base Ω_v for their largest Ω_v, and opts.countable, if
-// given, prints countable terms
+// printing: opts.cnf writes terms in base Ω_v for their largest Ω_v, opts.countable, if given,
+// prints countable terms, and opts.psi, if given, can print a ψ term another way
 
 const subscriptDigits = n => [...String(n)].map(d => "₀₁₂₃₄₅₆₇₈₉"[d]).join("");
 
@@ -100,13 +100,13 @@ function wrap(s, chars = "+·") {
 function subscript(u, opts) {
 	if (isNat(u)) return subscriptDigits(u.length);
 	const s = show(u, opts);
-	return u.length == 1 && !/[+·^]/.test(s) ? "_" + s : "_{" + s + "}";
+	return wrap(s, "+·^") == s ? "_" + s : "_{" + s + "}";
 }
 
 function principal([u, b], opts) {
 	if (!u.length && !cmp(b, ONE)) return "ω";
 	if (!b.length) return !cmp(u, ONE) ? "Ω" : "Ω" + subscript(u, opts);
-	return "ψ" + (u.length ? subscript(u, opts) : "") + `(${show(b, opts)})`;
+	return opts.psi?.([u, b]) || "ψ" + (u.length ? subscript(u, opts) : "") + `(${show(b, opts)})`;
 }
 
 // runs of equal summands: [[s, count], ...]

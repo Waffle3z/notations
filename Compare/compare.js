@@ -8,7 +8,8 @@
 const {countable, isOne, cmp} = BOCF;
 
 // the extended notations stand in for the plain ones: HPrSS is collapsing HPrSS, LPrSS transfinite LPrSS
-const SOURCES = {HPrSS: "../CHPrSS/notation.js", LPrSS: "../TLPrSS/notation.js", "? sequence": "../QSeq/notation.js", "T? sequence": "../TQSeq/notation.js"};
+const SOURCES = {HPrSS: "../CHPrSS/notation.js", LPrSS: "../TLPrSS/notation.js", "? sequence": "../QSeq/notation.js", "T? sequence": "../TQSeq/notation.js",
+	"Nothing OCF": "../NOCF/notation.js", SSS: "../SSS/notation.js"};
 const texts = {};
 
 // a fresh copy of a notation class, so each column keeps its own settings
@@ -112,8 +113,10 @@ function expandRow(col, i, repeat) {
 	render();
 }
 
-// the display settings a column offers (not "show ordinal", which the table already does)
-const settings = col => (col.N.parameters ?? []).filter(p => !p.url && p.id != "aliases");
+// the display settings a column offers (not "show ordinal", which the table already does, nor the
+// ones hidden by visibleIf, as in main.js)
+const shown = p => !p.url && (!p.visibleIf || p.visibleIf());
+const settings = col => (col.N.parameters ?? []).filter(p => shown(p) && p.id != "aliases" && (p.inputs ?? [p]).some(shown));
 
 function settingsPanel(col) {
 	const panel = document.createElement("div");
@@ -121,7 +124,7 @@ function settingsPanel(col) {
 	for (const param of settings(col)) {
 		const group = document.createElement("div");
 		if (param.legend) group.append(param.legend);
-		for (const input of param.inputs ?? [param]) {
+		for (const input of (param.inputs ?? [param]).filter(shown)) {
 			const label = document.createElement("label");
 			const inp = document.createElement("input");
 			inp.type = input.type;
@@ -203,4 +206,6 @@ async function addColumn(name, values = {}) {
 	await addColumn("LPrSS");
 	await addColumn("? sequence");
 	await addColumn("T? sequence");
+	await addColumn("Nothing OCF");
+	await addColumn("SSS");
 })();

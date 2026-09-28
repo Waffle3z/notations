@@ -3,7 +3,6 @@
 // cofinality collapses like extended Buchholz ψ.
 // Standard sequences correspond to EBOCF terms below Ω₁ with the same order, and
 // expand(code t, n) = code(t[n]) for Buchholz's fundamental sequences; the limit is EBO.
-// (Lean: Googology/Minimal/Extended, ecodeIso, expand_code, eboType_eq; tools/ebocf.py)
 
 // Terms are EBOCF terms (ordinals/bocf.js).
 // requires: ordinals/bocf.js ordinals/veblen.js

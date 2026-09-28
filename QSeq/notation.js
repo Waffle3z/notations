@@ -3,8 +3,7 @@
 // successor; c = s[p]+1 expands like PrSS; otherwise like SSS, walking left from p over the
 // entries not above the running minimum, stopping at the first whose normalized suffix is
 // lexicographically below the parent's, with copies shifted by c - s[bad] - 1.
-// Below [1,2,5] = EBO it encodes extended Buchholz terms: enc(ψ_ν(a), r) = r, enc(ν, r+2), enc(a, r+1)
-// (Lean: Googology/Minimal/Extended/QSeq, QEnc, qseq_type_eq_EBO; tools/qseq.py).
+// Below [1,2,5] = EBO it encodes extended Buchholz terms: enc(ψ_ν(a), r) = r, enc(ν, r+2), enc(a, r+1).
 // requires: ordinals/bocf.js
 
 function lexLess(a, b) {
