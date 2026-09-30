@@ -6,15 +6,14 @@ function drawGraph(sets, labeled = true) {
 		levels[i] = sets[i].length == 0 ? 0 : Math.max(...sets[i].map(x => levels[x])) + 1;
 	}
 	let matrix = sets.map(x => x.length == 0 ? [0] : x.map(y => levels[y]+1));
+	// Each node counts itself plus everything all of its parents count. Summing the
+	// parents' own sequence values is what makes (0)(1)(2,1)(3,2,1)(4,3,2,1) come out as
+	// 1,2,4,8,16; adding their levels instead only approximates it and undercounts.
+	// BigInt, since the values grow exponentially and lose precision past 2^53.
 	let sequence = [];
-	for (let i = 0; i < matrix.length; i++) {
-		let j = matrix.findLastIndex((x, j) => j < i && x[0] < matrix[i][0]);
-		if (j == -1) {
-			sequence[i] = 1;
-		} else {
-			sequence[i] = sequence[j] + 1;
-			for (let j = 1; j < matrix[i].length; j++) sequence[i] += matrix[i][j];
-		}
+	for (let i = 0; i < n; i++) {
+		sequence[i] = 1n;
+		for (const p of sets[i]) sequence[i] += sequence[p];
 	}
 	const matrixString = "(" + matrix.map(x => x.join(",")).join(")(") + ")";
 
