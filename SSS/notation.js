@@ -3,15 +3,9 @@
 // not above the running minimum, stopping at the first whose normalized suffix is lexicographically
 // below the parent's, and copy from the last entry passed, shifted by c - s[bad] - 1.
 // Below [0,0,2] = EBO it is the SSS encoding of Nothing OCF (ordinals/nocf.js).
-// requires: ordinals/bocf.js ordinals/veblen.js ordinals/nocf.js
+// requires: ordinals/util.js ordinals/bocf.js ordinals/veblen.js ordinals/nocf.js ordinals/syntax.js
 
-function lexLess(a, b) {
-	for (let i = 0; i < a.length; i++) {
-		if (i >= b.length) return false;
-		if (a[i] != b[i]) return a[i] < b[i];
-	}
-	return a.length < b.length;
-}
+const {lexLess} = Util;
 
 class notation {
 	static title = "SSS";
@@ -21,12 +15,7 @@ class notation {
 
 	// the ordinal settings only matter for "Show ordinal"
 	static parameters = [
-		{legend: "Ordinal syntax:", visibleIf: () => notation.aliases, inputs: [
-			{type: "radio", id: "syntax", value: "psi", label: "Buchholz ψ"},
-			{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η"},
-			{type: "radio", id: "syntax", value: "veblen", label: "Veblen below ψ(Ω₂)"},
-		]},
-		{type: "checkbox", id: "cnf", visibleIf: () => notation.aliases, label: "Cantor normal form"},
+		...OrdinalSyntax.parameters({visibleIf: () => notation.aliases}),
 		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 	]
 
@@ -70,7 +59,6 @@ class notation {
 		if (!value) return "∅";
 		const t = notation.toOrdinal(notation.fromString(value));
 		if (!notation.aliases || !t) return value;
-		const opts = {cnf: notation.cnf, named: notation.syntax == "named"};
-		return value + " = " + (notation.syntax == "psi" ? BOCF.show : Veblen.show)(t, opts);
+		return value + " = " + OrdinalSyntax.show(t, notation);
 	}
 };

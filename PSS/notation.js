@@ -5,43 +5,11 @@
 // from c's parent in the active row to just before c, and copy i of it has its first entries raised
 // by i·Δ, with Δ = c's first entry minus the parent's in row 1, and Δ = 0 in row 0.
 //
-// Value: at depth r, a column (r,u) is a summand ψ_u whose argument is the deeper columns after it,
-// read at depth r+1, and this is Buchholz's ψ except for bridges: inside ψ_(q-1), a first summand
-// ψ_q(y), with P the leading summands of y with subscripts above q, stands for y if y = P and for
-// P + ψ_q(y) otherwise. This maps the standard sequences onto the terms below ψ₀(Ω_ω) in order.
-// requires: ordinals/bocf.js ordinals/veblen.js
+// Value: Buchholz's ψ with bridges, by the PSS value map (ordinals/pss.js), which maps the standard
+// sequences onto the terms below ψ₀(Ω_ω) in order.
+// requires: ordinals/bocf.js ordinals/veblen.js ordinals/pss.js ordinals/syntax.js
 
-// the raw term of the columns at depth r: [[u, argument], ...]
-function raw(s, r = 0) {
-	const t = [];
-	for (let i = 0, j; i < s.length; i = j) {
-		for (j = i + 1; j < s.length && s[j][0] > r; j++);
-		t.push([s[i][1], raw(s.slice(i + 1, j), r + 1)]);
-	}
-	return t;
-}
-
-// the Buchholz term of a raw term inside ψ_(q-1) (q = 0: the top level)
-function read(q, t) {
-	let out = [];
-	t.forEach(([u, b], i) => {
-		const y = read(u + 1, b);
-		if (i || u != q || !q) return out.push([u, y]);
-		const k = y.findIndex(([v]) => v <= q);
-		out = y.length && k < 0 ? y : [...y.slice(0, k), [q, y]];
-	});
-	return out;
-}
-
-const toBOCF = t => t.map(([u, b]) => [BOCF.nat(u), toBOCF(b)]);
-
-const values = new Map();
-
-function value(s) {
-	const key = JSON.stringify(s);
-	if (!values.has(key)) values.set(key, toBOCF(read(0, raw(s))));
-	return values.get(key);
-}
+const value = s => PSSMap.value(s);
 
 const pairLess = (a, b) => a[0] - b[0] || a[1] - b[1];
 
@@ -54,12 +22,7 @@ class notation {
 
 	// the ordinal settings only matter for "Show ordinal"
 	static parameters = [
-		{legend: "Ordinal syntax:", visibleIf: () => notation.aliases, inputs: [
-			{type: "radio", id: "syntax", value: "psi", label: "Buchholz ψ"},
-			{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η"},
-			{type: "radio", id: "syntax", value: "veblen", label: "Veblen below ψ(Ω₂)"},
-		]},
-		{type: "checkbox", id: "cnf", visibleIf: () => notation.aliases, label: "Cantor normal form"},
+		...OrdinalSyntax.parameters({visibleIf: () => notation.aliases}),
 		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 	]
 
@@ -142,7 +105,6 @@ class notation {
 		if (!value) return "∅";
 		const t = notation.toOrdinal(notation.fromString(value));
 		if (!notation.aliases) return value;
-		const opts = {cnf: notation.cnf, named: notation.syntax == "named"};
-		return value + " = " + (notation.syntax == "psi" ? BOCF.show : Veblen.show)(t, opts);
+		return value + " = " + OrdinalSyntax.show(t, notation);
 	}
 };

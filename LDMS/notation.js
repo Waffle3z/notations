@@ -1,9 +1,6 @@
-function arrayCompare(a, b) { // -1 if a < b, 0 if a == b, 1 if a > b
-	for (let i = 0; i < Math.max(a.length, b.length); i++) {
-		if (a[i] != b[i]) return (a[i] || 0) < (b[i] || 0) ? -1 : 1;
-	}
-	return a.length < b.length ? -1 : a.length == b.length ? 0 : 1
-}
+// requires: ordinals/util.js
+
+const {arrayCompare} = Util;
 
 function toPointerMatrix(a) {
 	let pointerMatrix = [];

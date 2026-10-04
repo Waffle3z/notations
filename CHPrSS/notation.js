@@ -5,7 +5,7 @@
 // expand(code t, n) = code(t[n]) for Buchholz's fundamental sequences; the limit is EBO.
 
 // Terms are EBOCF terms (ordinals/bocf.js).
-// requires: ordinals/bocf.js ordinals/veblen.js
+// requires: ordinals/bocf.js ordinals/veblen.js ordinals/syntax.js
 const {ONE, isNat, countable, lex, cmp, parseNested, toSeq: code, fromSeq: parse, expandSeq} = BOCF;
 
 const nested = e => isNat(e) ? String(e.length) : `(${code(e).map(nested).join(",")})`;
@@ -23,12 +23,7 @@ class notation {
 			{type: "radio", id: "entries", value: "ordinal", label: "Ordinal (0,Ω)"},
 			{type: "radio", id: "entries", value: "nested", label: "Nested (0,(1))"},
 		]},
-		{legend: "Ordinal syntax:", inputs: [
-			{type: "radio", id: "syntax", value: "psi", label: "Buchholz ψ"},
-			{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η"},
-			{type: "radio", id: "syntax", value: "veblen", label: "Dimensional veblen"},
-		]},
-		{type: "checkbox", id: "cnf", label: "Cantor normal form (ψ₁(ψ₁(Ω)) = Ω^Ω)"},
+		...OrdinalSyntax.parameters({veblen: "Dimensional veblen", cnf: "Cantor normal form (ψ₁(ψ₁(Ω)) = Ω^Ω)"}),
 		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 	]
 
@@ -73,8 +68,7 @@ class notation {
 	static convertToNotation(value) {
 		const a = notation.fromString(value);
 		if (!a.length) return "∅";
-		const opts = {cnf: notation.cnf, named: notation.syntax == "named"};
-		const show = x => (notation.syntax == "psi" ? BOCF.show : Veblen.show)(x, opts);
+		const show = x => OrdinalSyntax.show(x, notation);
 		const str = notation.entries == "nested" ? value : a.map(show).join(",");
 		return notation.aliases ? str + " = " + show(parse(a)) : str;
 	}

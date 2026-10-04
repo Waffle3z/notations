@@ -3,17 +3,10 @@
 // Below [1,2,4,6] = EBO it is extended Buchholz ψ with subscripts in Cantor normal form: a child
 // at r+1 is an argument summand, a child at r+2 a subscript summand ω^e whose children spell e,
 //   enc(ψ_ν(α), r) = r, (r+2, enc(e, r+3) for each ω^e in ν), enc(α, r+1)
-// requires: ordinals/bocf.js
+// requires: ordinals/util.js ordinals/bocf.js
 
 const {log, omega} = BOCF;
-
-function lexLess(a, b) {
-	for (let i = 0; i < a.length; i++) {
-		if (i >= b.length) return false;
-		if (a[i] != b[i]) return a[i] < b[i];
-	}
-	return a.length < b.length;
-}
+const {lexLess} = Util;
 
 const norm = (m, k) => m.slice(k).map(v => v - m[k]);
 const lastBelow = (m, i, c) => m.findLastIndex((v, j) => j < i && v < c);

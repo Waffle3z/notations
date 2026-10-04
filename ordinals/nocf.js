@@ -45,27 +45,16 @@ function expand(s, n) {
 	return out;
 }
 
-// fundamental sequences: SSS expansion, except that no successor stands where a limit could. The
-// last entry x of an element ends its innermost subterm, at depth x. If that subterm is a natural
-// number it goes, which leaves its parent a successor, and so on up to the first limit: this drops
-// the final run that rises by steps of 0 or 1. Below that limit, a run of x's preceded by a larger
-// entry is the +k of a subterm at depth x whose predecessor is a limit, and it goes too, down to
-// deeper depths. Each step is taken only if the element stays above the previous one.
+// fundamental sequences: SSS expansion, except that no successor stands where a limit could: an element's final run
+// rising by steps of 0 or 1 (the +k of its innermost subterms) goes when what is left stays above the previous element.
+// Every term below EBO is then an element of some fundamental sequence, so none needs a successor expanded.
 function fundamental(s, n) {
-	let e = expand(s, n);
+	const e = expand(s, n);
 	if (!n) return e;
-	const prev = expand(s, n - 1), above = q => q.length && lex(q, prev, (a, b) => a - b) > 0;
+	const prev = expand(s, n - 1);
 	let i = e.length - 1;
 	while (i > 0 && e[i - 1] <= e[i]) i--;
-	if (!above(e.slice(0, i))) return e;
-	e = e.slice(0, i);
-	while (true) {
-		const x = e.at(-1);
-		let q = e;
-		while (q.length && q.at(-1) == x) q = q.slice(0, -1);
-		if (!(q.at(-1) > x && above(q))) return e;
-		e = q;
-	}
+	return i && lex(e.slice(0, i), prev, (a, b) => a - b) > 0 ? e.slice(0, i) : e;
 }
 
 // ---------------------------------------------------------------- value

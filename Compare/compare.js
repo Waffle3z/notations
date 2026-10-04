@@ -1,9 +1,12 @@
-// Compare notations in a table. Rows are ordinals (EBOCF terms) in decreasing order; each
-// column writes them in one notation with its own display settings. Clicking a cell inserts
-// the next element of that notation's fundamental sequence below the row, shift-click keeps
-// expanding. A notation takes part through toOrdinal(seq) and fromOrdinal(term) (null if the
-// ordinal is out of its range), a static limit term if its limit is below EBO, and a static
-// ebo sequence for EBO if its limit is above.
+// Compare notations in a table. Rows are ordinals in decreasing order; each column writes them in
+// one notation with its own display settings. Clicking a cell inserts the next element of that
+// notation's fundamental sequence below the row, shift-click keeps expanding.
+//
+// Below EBO a row is an EBOCF term; from EBO = ?[1,2,5] up to the limit of ?, a ? sequence. A
+// notation takes part through toOrdinal(seq) and fromOrdinal(term) (null if the ordinal is out of
+// its range), a static limit term if its limit is below EBO, and a static ebo sequence for EBO if
+// its limit is above. Beyond EBO it takes part through toQ(seq) and fromQ(q), converting to and
+// from ? sequences, and qLimit if its limit is ?'s; without them its cells there are "?".
 
 const {countable, isOne, cmp} = BOCF;
 
@@ -24,14 +27,7 @@ function ordinalNotation(CH) {
 		static title = "Ordinal";
 		static syntax = "psi";
 		static cnf = false;
-		static parameters = [
-			{legend: "Syntax:", inputs: [
-				{type: "radio", id: "syntax", value: "psi", label: "Buchholz ψ"},
-				{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η"},
-				{type: "radio", id: "syntax", value: "veblen", label: "Veblen"},
-			]},
-			{type: "checkbox", id: "cnf", label: "Cantor normal form"},
-		];
+		static parameters = OrdinalSyntax.parameters({veblen: "Veblen"});
 		static toOrdinal = t => t;
 		static fromOrdinal = t => countable(t) ? t : null;
 		static expand = (t, n) => CH.toOrdinal(CH.expand(CH.fromOrdinal(t), n));
@@ -39,8 +35,7 @@ function ordinalNotation(CH) {
 		static isSuccessor = t => !t.length || isOne(t.at(-1));
 		static toString = t => JSON.stringify(t);
 		static convertToNotation(s) {
-			const opts = {cnf: this.cnf, named: this.syntax == "named"};
-			return (this.syntax == "psi" ? BOCF.show : Veblen.show)(JSON.parse(s), opts);
+			return OrdinalSyntax.show(JSON.parse(s), this);
 		}
 	};
 }
@@ -53,29 +48,48 @@ async function makeNotation(name) {
 }
 
 const columns = []; // {name, N, cache}
-let rows = [{term: null}]; // term null is the EBO row
+let Q; // the ? sequence, the reference from EBO on
 let nextId = 0;
 
-function cellText(col, term) {
-	const limit = col.N.limit, show = seq => col.N.convertToNotation ? col.N.convertToNotation(col.N.toString(seq)) : col.N.toString(seq);
-	if (!term) return limit ? {text: null} : col.N.ebo ? {text: show(col.N.ebo), seq: col.N.ebo} : {text: "Limit", limit: true};
-	if (limit && !cmp(term, limit)) return {text: "Limit", limit: true};
-	const key = JSON.stringify(term);
-	if (!col.cache.has(key)) {
-		const seq = col.N.fromOrdinal(term);
-		const text = !seq ? null : show(seq);
-		col.cache.set(key, {text, seq});
+// row keys: {t} an EBOCF term below EBO, {q} a ? sequence from EBO on, {top} the limit of ?
+const EBO_Q = [1, 2, 5];
+let rows = [{key: {top: true}}, {key: {q: EBO_Q}}];
+const qcmp = (a, b) => BOCF.lex(a, b, (x, y) => x - y);
+const rank = k => k.top ? 2 : k.q ? 1 : 0;
+const cmpKey = (a, b) => rank(a) - rank(b) || (a.q ? qcmp(a.q, b.q) : a.t ? cmp(a.t, b.t) : 0);
+const isSuccKey = k => k.t ? !k.t.length || isOne(k.t.at(-1)) : !k.top && Q.isSuccessor(k.q);
+const isEBO = k => k.q && !qcmp(k.q, EBO_Q);
+
+// the row key of a sequence in col's notation, or null if it can't be placed
+function keyOf(N, seq) {
+	const t = N.toOrdinal(seq);
+	if (t) return {t};
+	const q = N.toQ?.(seq);
+	return q ? {q} : null;
+}
+
+function cellText(col, key) {
+	const N = col.N, show = seq => N.convertToNotation ? N.convertToNotation(N.toString(seq)) : N.toString(seq);
+	const unknown = N.ebo ? {text: "?", unknown: true} : {text: null};
+	if (key.top) return N.qLimit ? {text: "Limit", limit: true} : unknown;
+	if (isEBO(key)) return N.limit ? {text: null} : N.ebo ? {text: show(N.ebo), seq: N.ebo} : {text: "Limit", limit: true};
+	if (key.q && !N.fromQ) return unknown;
+	if (key.t && N.limit && !cmp(key.t, N.limit)) return {text: "Limit", limit: true};
+	const id = JSON.stringify(key);
+	if (!col.cache.has(id)) {
+		const seq = key.q ? N.fromQ(key.q) : N.fromOrdinal(key.t);
+		col.cache.set(id, {text: !seq ? null : show(seq), seq});
 	}
-	return col.cache.get(key);
+	return col.cache.get(id);
 }
 
 // the next fundamental sequence element of the row in col's notation above `below`, as in main.js
-function step(col, term, below) {
-	const N = col.N, {seq, limit} = cellText(col, term);
+function step(col, key, below) {
+	const N = col.N, {seq, limit} = cellText(col, key);
 	if (!limit && (!seq || !seq.length)) return null;
-	const at = n => N.toOrdinal(limit ? N.expandLimit(n) : N.expand(seq, n));
-	const isSucc = t => !t.length || isOne(t.at(-1));
-	const above = t => !below || cmp(t, below) > 0;
+	const at = n => keyOf(N, limit ? N.expandLimit(n) : N.expand(seq, n));
+	const isSucc = k => !k || isSuccKey(k);
+	const above = k => !below || k && cmpKey(k, below) > 0;
 	if (!limit && N.isSuccessor(seq)) return above(at(0)) ? at(0) : null;
 	let low = !limit && isSucc(at(0)) && !isSucc(at(1)) ? 1 : 0;
 	if (below) {
@@ -96,17 +110,17 @@ function step(col, term, below) {
 
 function expandRow(col, i, repeat) {
 	const start = Date.now();
-	let term = rows[i].term, at = i + 1;
+	let key = rows[i].key, at = i + 1;
 	for (let k = 0; k < 1000; k++) {
 		let next = null;
 		try {
-			next = step(col, term, rows[at]?.term);
+			next = step(col, key, rows[at]?.key);
 		} catch (e) { // e.g. an index so large that the expansion nests too deeply
 			console.warn(e);
 		}
-		if (!next) break;
-		rows.splice(at, 0, {term: next});
-		term = next;
+		if (!next || cmpKey(next, key) >= 0) break;
+		rows.splice(at, 0, {key: next});
+		key = next;
 		at++;
 		if (!repeat || Date.now() - start > 200) break;
 	}
@@ -177,13 +191,13 @@ function render() {
 	rows.forEach((row, i) => {
 		const tr = body.insertRow();
 		const first = tr.insertCell();
-		if (row.term) first.append(button("×", "remove row", () => { rows.splice(i, 1); render(); }));
+		if (!row.key.top && !isEBO(row.key)) first.append(button("×", "remove row", () => { rows.splice(i, 1); render(); }));
 		for (const col of columns) {
 			const td = tr.insertCell();
-			const {text} = cellText(col, row.term);
+			const {text, unknown} = cellText(col, row.key);
 			td.textContent = text == null ? "—" : text || "∅";
-			td.className = text == null ? "cell out" : "cell";
-			if (text != null) td.onclick = e => expandRow(col, i, e.shiftKey);
+			td.className = text == null || unknown ? "cell out" : "cell";
+			if (text != null && !unknown) td.onclick = e => expandRow(col, i, e.shiftKey);
 		}
 	});
 }
@@ -192,14 +206,15 @@ async function addColumn(name, values = {}) {
 	const N = await makeNotation(name);
 	Object.assign(N, values);
 	columns.push({name, N, cache: new Map(), id: nextId++});
-	if (N.limit && !rows.some(r => r.term && !cmp(r.term, N.limit))) { // a row for this notation's limit
-		const i = rows.findIndex(r => r.term && cmp(r.term, N.limit) < 0);
-		rows.splice(i < 0 ? rows.length : i, 0, {term: N.limit});
+	if (N.limit && !rows.some(r => r.key.t && !cmp(r.key.t, N.limit))) { // a row for this notation's limit
+		const key = {t: N.limit}, i = rows.findIndex(r => cmpKey(r.key, key) < 0);
+		rows.splice(i < 0 ? rows.length : i, 0, {key});
 	}
 	render();
 }
 
 (async () => {
+	Q = await load("? sequence");
 	await addColumn("Ordinal", {syntax: "named", cnf: true});
 	await addColumn("Ordinal", {syntax: "veblen"});
 	await addColumn("HPrSS");

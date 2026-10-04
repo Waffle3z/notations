@@ -109,10 +109,68 @@ function fits(t, named) {
 }
 
 // printing: φ(a,b,c) for up to 4 finite positions, α@X otherwise, and ω^, ε, ζ, η, Γ;
-// with opts.named, only ω^, ε, ζ, η, and with opts.plain, only φ; a summand that doesn't fit stays in ψ form
+// with opts.named, only ω^, ε, ζ, η, and with opts.plain, only φ; a summand that doesn't fit stays in ψ form.
+// With opts.relative, terms between Ω and Ω₂ are written the same way relative to Ω (see relativeStr).
 
 function show(t, opts = {}) {
+	if (opts.relative && !BOCF.countable(t) && t.every(([u]) => cmp(u, ONE) <= 0)) return relativeStr(t, opts);
 	return BOCF.show(t, {...opts, countable: t => countableStr(t, opts)});
+}
+
+// Terms below Ω₂ in the style ε_(Ω+1)·ω, ζ_(Ω+1), Ω^Ω: a fixed point by its entries (entriesOf
+// works at level 1), as ε, ζ, η (with opts.named, otherwise Γ and φ too; a summand that doesn't fit
+// stays in ψ form); an ω-power ω^(E·δ+β), with E the largest epsilon above Ω at most its leading
+// exponent summand, as E^δ·ω^β (ε_(Ω+1)·Ω, ε_(Ω+1)², ε_(Ω+1)^ε_(Ω+1)); below ε_(Ω+1), base-Ω
+// Cantor normal form (Ω^3·ω, Ω^Ω).
+function relativeStr(t, opts) {
+	return runs(t).map(([s, k]) => {
+		if (BOCF.isOne(s)) return String(k);
+		const p = relativeSummand(s, opts);
+		return k == 1 ? p : p + "·" + k;
+	}).join("+") || "0";
+}
+
+const aboveEps = s => !BOCF.countable([s]) && !BOCF.below(s[1], ONE);
+const sub1 = x => wrap(x, "+·^") == x ? "_" + x : "_{" + x + "}";
+
+function relativeSummand(s, opts) {
+	const named = opts.named;
+	if (!aboveEps(s)) return show([s], {...opts, relative: false, cnf: true});
+	const e = entriesOf(s);
+	if (!e) return BOCF.show([s], {});
+	const hi = e.filter(([, X]) => X.length), arg = e.find(([, X]) => !X.length)?.[0] ?? [];
+	const argStr = relativeStr(arg, opts);
+	if (hi.length == 1 && isNat(hi[0][0]) && isNat(hi[0][1])) {
+		const a = hi[0][0].length, X = hi[0][1].length;
+		if (X == 1 && a <= 3) return "εζη"[a - 1] + sub1(argStr);
+		if (X == 2 && a == 1 && !named) return "Γ" + sub1(argStr);
+	}
+	if (hi.length && named) return BOCF.show([s], {cnf: true});
+	if (hi.length && hi.every(([, X]) => isNat(X))) { // φ(a_n, ..., a_1, arg)
+		const args = Array(Math.max(...hi.map(([, X]) => X.length)) + 1).fill("0");
+		for (const [a, X] of hi) args[args.length - 1 - X.length] = relativeStr(a, opts);
+		args[args.length - 1] = argStr;
+		return "φ(" + args.join(",") + ")";
+	}
+	if (hi.length) return "φ(" + hi.map(([a, X]) => wrap(relativeStr(a, opts)) + "@" + wrap(relativeStr(X, opts))).join(",") + "," + argStr + ")";
+	const E = arg[0] && epsilonUnder(arg[0]);
+	if (!E) return "ω^" + wrap(argStr);
+	let delta = [], beta = [];
+	for (const a of arg) {
+		const la = log(a);
+		if (cmp(la, [E]) >= 0) delta = add(delta, omega(sub(la, [E])));
+		else beta = add(beta, [a]);
+	}
+	const d = !cmp(delta, ONE) ? "" : "^" + wrap(relativeStr(delta, opts));
+	return relativeSummand(E, opts) + d + (beta.length ? "·" + wrap(relativeStr(omega(beta), opts)) : "");
+}
+
+// the largest epsilon number above Ω at most the summand s (ε_(Ω+1)² gives ε_(Ω+1)), or null
+function epsilonUnder(s) {
+	if (!aboveEps(s)) return null;
+	if (entriesOf(s)?.some(([, X]) => X.length)) return s;
+	const l = log(s);
+	return l.length ? epsilonUnder(l[0]) : null;
 }
 
 function countableStr(t, opts) {

@@ -58,8 +58,9 @@ function omega(c) {
 
 const below = (x, v) => x.every(([u, b]) => cmp(u, v) < 0 || (!cmp(u, v) && below(b, v)));
 
-// Ω_v·x, using Ω_v·ω^β = ψ_v(β)
-const mulOmega = (x, v) => x.map(s => [v, log(s)]);
+// Ω_v·x: Ω_v·ω^β = ψ_v(β) for a summand below ε_(Ω_v+1); a summand at or above it is already a
+// multiple of Ω_v (Ω·ε_(Ω+1) = ε_(Ω+1)) and stays
+const mulOmega = (x, v) => x.map(s => cmp(s[0], v) > 0 || !cmp(s[0], v) && !below(s[1], v) ? s : [v, log(s)]);
 
 // the digits [F, k] of t = Σ Ω_v^F·k with k < Ω_v, or null if t is not below ε_(Ω_v+1)
 function digits(t, v) {
@@ -223,7 +224,7 @@ function parseNested(str, inner) {
 	return str ? seq() : [];
 }
 
-return {ONE, nat, isOne, isNat, countable, lex, cmpSummand, cmp, add, sub, log, omega, below, digits, undigits,
+return {ONE, nat, isOne, isNat, countable, lex, cmpSummand, cmp, add, sub, log, omega, mulOmega, below, digits, undigits,
 	subscriptDigits, wrap, principal, runs, show, parseNested, toSeq, fromSeq, expandSeq, expand};
 
 })();

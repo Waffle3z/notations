@@ -13,7 +13,7 @@
 // Fundamental sequences: below EBO, Buchholz's (ordinals/bocf.js) carried over through this bijection;
 // from EBO up to C(Ω,0), the limit of the recursive terms, α[k] is the largest standard term below α
 // with k more C's, as in https://googology.fandom.com/wiki/User_blog:Hyp_cos/Fundamental_Sequences_in_Taranovsky%27s_Notation
-// requires: ordinals/bocf.js ordinals/veblen.js
+// requires: ordinals/bocf.js ordinals/veblen.js ordinals/syntax.js
 
 const DoR = (() => {
 
@@ -258,12 +258,7 @@ class notation {
 
 	// the ordinal settings only matter for ordinals that are written out
 	static parameters = [
-		{legend: "Ordinal syntax:", visibleIf: () => notation.aliases || notation.subterms != "nested", inputs: [
-			{type: "radio", id: "syntax", value: "psi", label: "Buchholz ψ"},
-			{type: "radio", id: "syntax", value: "named", label: "ω^, ε, ζ, η"},
-			{type: "radio", id: "syntax", value: "veblen", label: "Veblen below ψ(Ω₂)"},
-		]},
-		{type: "checkbox", id: "cnf", visibleIf: () => notation.aliases || notation.subterms != "nested", label: "Cantor normal form"},
+		...OrdinalSyntax.parameters({visibleIf: () => notation.aliases || notation.subterms != "nested"}),
 		{type: "checkbox", id: "aliases", label: "Show ordinal"},
 		{legend: "Subterms:", inputs: [
 			{type: "radio", id: "subterms", value: "nested", label: "Nested C(C(C(1,0),0),0)"},
@@ -346,8 +341,7 @@ class notation {
 
 	static convertToNotation(value) {
 		const a = notation.fromString(value), t = notation.toOrdinal(a);
-		const opts = {cnf: notation.cnf, named: notation.syntax == "named"};
-		const ord = x => (notation.syntax == "psi" ? BOCF.show : Veblen.show)(x, opts);
+		const ord = x => OrdinalSyntax.show(x, notation);
 		// a subterm below Ω as its ordinal (with "uncountable", only if it is uncountable), or null
 		const mode = notation.subterms;
 		const asOrdinal = (d, inner) => {
