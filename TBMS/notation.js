@@ -1,7 +1,11 @@
 // Transfinitary BMS (TBMS): BMS whose columns are transfinite sequences.
 //
 // A column is a list of runs [value, length]: value >= 1, length an ordinal >= 1, adjacent values
-// distinct, trailing zeros omitted, so (2,1^ω+1) is [[2,1],[1,ω+1]] and has height 1+ω+1 = ω+1.
+// distinct, trailing zeros omitted, so (2,1^{ω+1}) is [[2,1],[1,ω+1]] and has height 1+ω+1 = ω+1.
+// A run length written as an ordinal is in braces unless it is a single symbol: 1^ω, 1^{ω+1}; one
+// written as a matrix is not: 1^(1)(2). On display a named entry with a transfinite run is in
+// braces too: ({ω}^ω), unlike ((ω)^ω), whose entry is the matrix (ω), and 1^{ω^ω}. The parser also
+// reads 1^ω+1 without braces.
 // An ordinal is a natural number (a JS number) or an infinite TBMS matrix (an array of columns);
 // run lengths are therefore TBMS terms themselves, smaller than the term they occur in.
 //
@@ -326,7 +330,7 @@ const TBMS = (() => {
 	const isSuccessor = m => m.length == 0 || m.at(-1).length == 0;
 
 	// ---------- printing ----------
-	// The pure form writes run lengths below ε₀ in Cantor normal form (1^ω+1) and everything else as
+	// The pure form writes run lengths below ε₀ in Cantor normal form (1^{ω+1}) and everything else as
 	// matrices. Display names (opts.display) are applied after, from ordinal values: recursive terms
 	// below lim(PSS) through the PSS map (ordinals/pss.js), nonrecursive terms of level 1 through
 	// X = Ω·r (omegaValue), both written in the shared ordinal syntax (ordinals/syntax.js); and the
@@ -519,14 +523,22 @@ const TBMS = (() => {
 		if (c.length == 0) return "(0)";
 		const parts = [];
 		for (const [v, l] of c) {
-			// entries are matrices (parsable); on display a named entry is written in parentheses
+			// entries are matrices (parsable); on display a named entry is written in braces when it has a
+			// transfinite run, {ω}^ω, or its name would read as runs or several entries ({ω^2}, {φ(1,0)})
 			const info = isNum(v) || !opts.display ? null : ordInfo(v, opts);
-			const vs = isNum(v) ? String(v) : !info ? show(v, opts) : info.matrix ? info.s : "(" + info.s + ")";
+			const vs = isNum(v) ? String(v) : !info || info.matrix ? (info ? info.s : show(v, opts))
+				: !isNum(l) || /[,^]/.test(info.s) ? "{" + info.s + "}" : info.s;
 			if (isNum(l)) for (let i = 0; i < l; i++) parts.push(vs);
-			else parts.push(vs + "^" + ordName(l, opts));
+			else {
+				const li = ordInfo(l, opts);
+				parts.push(vs + "^" + (li.matrix ? li.s : brace(li.s)));
+			}
 		}
 		return "(" + parts.join(",") + ")";
 	}
+	// a run length written as an ordinal is in braces unless it is a single symbol: 1^ω, 1^{ω+1},
+	// 1^{Ω·ω}; a matrix delimits itself: 1^(1)(2)
+	const brace = s => /^(\d+|[ωΩ]|ε[₀-₉]+)$/.test(s) ? s : "{" + s + "}";
 	const show = (m, opts) => m.map(c => showCol(c, opts)).join("");
 
 	// ---------- parsing ----------
@@ -553,10 +565,18 @@ const TBMS = (() => {
 			const runs = [];
 			for (;;) {
 				ws();
-				const v = s[i] == "(" ? norm(matrix()) : int();
+				let v;
+				if (s[i] == "{") { i++; ws(); v = s[i] == "(" ? norm(matrix()) : sum(); expect("}"); }
+				else v = s[i] == "(" ? norm(matrix()) : int();
 				ws();
 				let l = 1;
-				if (s[i] == "^") { i++; ws(); l = s[i] == "(" ? norm(matrix()) : sum(); }
+				if (s[i] == "^") {
+					i++; ws();
+					const braced = s[i] == "{";
+					if (braced) { i++; ws(); }
+					l = s[i] == "(" ? norm(matrix()) : sum();
+					if (braced) expect("}");
+				}
 				runs.push([v, l]);
 				ws();
 				if (s[i] == ",") { i++; continue; }
@@ -627,7 +647,7 @@ const TBMS = (() => {
 	}
 
 	return {isNum, norm, toMat, cmpOrd, addOrd, subOrd, isLimitOrd, predOrd, terms, cmpCol, cmpMat,
-		normCol, colHeight, expand, bmsStep, analyse, isSuccessor, ordName, show, showCol, parse, limitTerm, recursiveLimit, cof, fsAt, level, levelAncestor, slot, pssPairs, pssName, omegaValue, omegaName, factorInfo};
+		normCol, colHeight, brace, expand, bmsStep, analyse, isSuccessor, ordName, show, showCol, parse, limitTerm, recursiveLimit, cof, fsAt, level, levelAncestor, slot, pssPairs, pssName, omegaValue, omegaName, factorInfo};
 })();
 
 class notation {
